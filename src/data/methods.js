@@ -1,0 +1,117 @@
+export const METHODS = [
+  {
+    id: 1, name: "Espresso", label: "Espresso Machine", brewType: "Pressure",
+    time: "30 sec", brewTime: "30 sec", temp: "93°C", ratio: "1:2", yield_ml: 60, yield_oz: 2,
+    grindPos: 1, grindLabel: "Fine",
+    tags: ["Intermediate", "Intense", "Quick"],
+    img: "https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=700&h=360&fit=crop&crop=center",
+    imgSm: "https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=180&h=180&fit=crop&crop=center",
+    specs_ml: [
+      { name: "Coffee dose", val: "18g" }, { name: "Yield", val: "36ml" },
+      { name: "Water temp", val: "93°C / 200°F" }, { name: "Pressure", val: "9 bar" }, { name: "Brew time", val: "25–30 sec" },
+    ],
+    specs_oz: [
+      { name: "Coffee dose", val: "0.6 oz" }, { name: "Yield", val: "1.2 oz" },
+      { name: "Water temp", val: "93°C / 200°F" }, { name: "Pressure", val: "9 bar" }, { name: "Brew time", val: "25–30 sec" },
+    ],
+    steps: [
+      { title: "Dose & distribute", desc: "Add 18g of finely ground coffee to your portafilter. Distribute evenly with a finger." },
+      { title: "Tamp firmly", desc: "Apply 15–20kg of pressure with a level tamp. A consistent tamp is key to even extraction." },
+      { title: "Lock & pull", desc: "Lock the portafilter in and start the shot immediately. Target 25–30 seconds for 36ml yield." },
+      { title: "Assess the shot", desc: "A good shot flows like warm honey — not too fast, not too slow. Adjust grind if needed." },
+    ],
+    tip: "If your shot runs under 25 sec, grind finer. Over 30 sec, grind coarser. Small adjustments make a big difference.",
+  },
+  {
+    id: 2, name: "Pour Over", label: "Manual Drip", brewType: "Percolation",
+    time: "3:30 min", brewTime: "3:30 min", temp: "93°C", ratio: "1:15", yield_ml: 300, yield_oz: 10,
+    grindPos: 3, grindLabel: "Medium",
+    tags: ["Beginner", "Clean cup", "Aromatic"],
+    img: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=700&h=360&fit=crop&crop=center",
+    imgSm: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=180&h=180&fit=crop&crop=center",
+    specs_ml: [
+      { name: "Coffee dose", val: "20g" }, { name: "Water", val: "300ml" },
+      { name: "Water temp", val: "93°C / 200°F" }, { name: "Brew ratio", val: "1:15" }, { name: "Total time", val: "3:30 min" },
+    ],
+    specs_oz: [
+      { name: "Coffee dose", val: "0.7 oz" }, { name: "Water", val: "10 oz" },
+      { name: "Water temp", val: "93°C / 200°F" }, { name: "Brew ratio", val: "1:15" }, { name: "Total time", val: "3:30 min" },
+    ],
+    steps: [
+      { title: "Rinse the filter", desc: "Place a paper filter in your dripper and rinse with hot water. Removes paper taste and preheats your vessel." },
+      { title: "Bloom the grounds", desc: "Add 20g of coffee. Pour 40ml of water and wait 30 seconds to let CO₂ escape." },
+      { title: "Pour in stages", desc: "Pour in slow, circular motions in 3 stages, reaching 300ml total by 2:30." },
+      { title: "Let it drain", desc: "Allow coffee to fully drip through. Total brew time should be around 3:30. Remove dripper and enjoy." },
+    ],
+    tip: "Use a gooseneck kettle for better control and always pour from the center outward in slow spirals. Even saturation = even extraction.",
+  },
+  {
+    id: 3, name: "Cold Brew", label: "Cold Steep", brewType: "Immersion",
+    time: "12–24 hr", brewTime: "12–24 hr", temp: "Room temp", ratio: "1:8", yield_ml: 400, yield_oz: 14,
+    grindPos: 6, grindLabel: "Coarse",
+    tags: ["Beginner", "Smooth", "Low acid"],
+    img: "https://images.unsplash.com/photo-1534778101976-62847782c213?w=700&h=360&fit=crop&crop=center",
+    imgSm: "https://images.unsplash.com/photo-1534778101976-62847782c213?w=180&h=180&fit=crop&crop=center",
+    specs_ml: [
+      { name: "Coffee dose", val: "50g" }, { name: "Water", val: "400ml" },
+      { name: "Water temp", val: "Room temp / Cold" }, { name: "Brew ratio", val: "1:8" }, { name: "Steep time", val: "12–24 hr" },
+    ],
+    specs_oz: [
+      { name: "Coffee dose", val: "1.8 oz" }, { name: "Water", val: "14 oz" },
+      { name: "Water temp", val: "Room temp / Cold" }, { name: "Brew ratio", val: "1:8" }, { name: "Steep time", val: "12–24 hr" },
+    ],
+    steps: [
+      { title: "Coarse grind", desc: "Grind 50g of coffee coarsely — similar to raw sugar. This prevents over-extraction." },
+      { title: "Combine & stir", desc: "Add grounds to a large jar with 400ml of cold or room temp water. Stir to saturate all grounds." },
+      { title: "Steep", desc: "Cover and refrigerate for 12–24 hours. Longer steep = stronger concentrate." },
+      { title: "Filter & serve", desc: "Strain through a fine mesh or coffee filter. Serve over ice, dilute 1:1 if using as concentrate." },
+    ],
+    tip: "Cold brew is a concentrate — dilute with equal parts water or milk before serving. It keeps in the fridge for up to 2 weeks.",
+  },
+  {
+    id: 4, name: "Moka Pot", label: "Stovetop", brewType: "Pressure",
+    time: "5 min", brewTime: "5 min", temp: "Medium heat", ratio: "1:7", yield_ml: 90, yield_oz: 3,
+    grindPos: 2, grindLabel: "Fine-Medium",
+    tags: ["Intermediate", "Bold", "Stovetop"],
+    img: "https://images.unsplash.com/photo-1624270898591-b55a57aa0af1?w=700&h=360&fit=crop&crop=center",
+    imgSm: "https://images.unsplash.com/photo-1624270898591-b55a57aa0af1?w=180&h=180&fit=crop&crop=center",
+    specs_ml: [
+      { name: "Coffee dose", val: "15g" }, { name: "Water", val: "90ml" },
+      { name: "Heat level", val: "Medium low" }, { name: "Brew ratio", val: "1:7" }, { name: "Brew time", val: "4–5 min" },
+    ],
+    specs_oz: [
+      { name: "Coffee dose", val: "0.5 oz" }, { name: "Water", val: "3 oz" },
+      { name: "Heat level", val: "Medium low" }, { name: "Brew ratio", val: "1:7" }, { name: "Brew time", val: "4–5 min" },
+    ],
+    steps: [
+      { title: "Fill the base", desc: "Fill the bottom chamber with hot water up to the safety valve. Using pre-heated water speeds up brew time." },
+      { title: "Add the coffee", desc: "Fill the filter basket with finely ground coffee. Level off without tamping — just a light press." },
+      { title: "Assemble & heat", desc: "Screw the top on tightly. Place on medium-low heat with the lid open." },
+      { title: "Remove at first gurgle", desc: "Once you hear a gurgling sound, remove from heat immediately to avoid bitterness." },
+    ],
+    tip: "Never tamp the grounds in a Moka Pot — it can build dangerous pressure. A light level is all you need.",
+  },
+  {
+    id: 5, name: "French Press", label: "Full Steep", brewType: "Immersion",
+    time: "4 min", brewTime: "4 min", temp: "93°C", ratio: "1:15", yield_ml: 350, yield_oz: 12,
+    grindPos: 5, grindLabel: "Coarse",
+    tags: ["Beginner", "Full bodied", "Classic"],
+    img: "https://images.unsplash.com/photo-1608354580875-30bd4168b351?w=700&h=360&fit=crop&crop=center",
+    imgSm: "https://images.unsplash.com/photo-1608354580875-30bd4168b351?w=180&h=180&fit=crop&crop=center",
+    specs_ml: [
+      { name: "Coffee dose", val: "23g" }, { name: "Water", val: "350ml" },
+      { name: "Water temp", val: "93°C / 200°F" }, { name: "Brew ratio", val: "1:15" }, { name: "Steep time", val: "4 min" },
+    ],
+    specs_oz: [
+      { name: "Coffee dose", val: "0.8 oz" }, { name: "Water", val: "12 oz" },
+      { name: "Water temp", val: "93°C / 200°F" }, { name: "Brew ratio", val: "1:15" }, { name: "Steep time", val: "4 min" },
+    ],
+    steps: [
+      { title: "Pre-heat the press", desc: "Rinse your French press with hot water to pre-heat it. Discard the rinse water." },
+      { title: "Add coffee & water", desc: "Add 23g of coarsely ground coffee. Pour 350ml of 93°C water over the grounds." },
+      { title: "Stir & steep", desc: "Give it a gentle stir to ensure all grounds are saturated. Place the lid on but don't press yet. Wait 4 minutes." },
+      { title: "Press slowly", desc: "Press the plunger down slowly and steadily. Pour immediately to avoid over-extraction." },
+    ],
+    tip: "Press gently — forcing the plunger adds bitterness. If it's hard to push, your grind is too fine. Pour as soon as you press.",
+  },
+];
