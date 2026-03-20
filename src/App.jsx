@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { darkTheme, lightTheme, makeStyles } from "./theme/theme";
+import { useAuth } from "./context/AuthContext";
 import HomeScreen from "./screens/HomeScreen";
 import RecipesScreen from "./screens/RecipesScreen";
 import RecipeDetailScreen from "./screens/RecipeDetailScreen";
@@ -7,6 +8,8 @@ import MethodsScreen from "./screens/MethodsScreen";
 import MethodDetailScreen from "./screens/MethodDetailScreen";
 import ProfileScreen from "./screens/ProfileScreen";
 import EditFavoritesScreen from "./screens/EditFavoritesScreen";
+import LoginScreen from "./screens/LoginScreen";
+import SignUpScreen from "./screens/SignUpScreen";
 
 const FONTS = `
   @import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Outfit:wght@300;400;500&display=swap');
@@ -15,12 +18,21 @@ const FONTS = `
 `;
 
 export default function App() {
-  const [isDark, setIsDark] = useState(false);
+  const { user, loading, prefs, savePref } = useAuth();
   const [screen, setScreen] = useState("Home");
   const [selectedItem, setSelectedItem] = useState(null);
-  const [units, setUnits] = useState("ml");
+
+  // Derive state from prefs (synced with Supabase)
+  const favorites = prefs.favorites;
+  const units = prefs.units;
+  const isDark = prefs.is_dark;
+
+  const setFavorites = (val) => savePref("favorites", typeof val === "function" ? val(favorites) : val);
+  const setUnits = (val) => savePref("units", val);
+  const setIsDark = (val) => savePref("is_dark", val);
+
+  // Default method still local (not critical to sync)
   const [defaultMethod, setDefaultMethod] = useState("Pour Over");
-  const [favorites, setFavorites] = useState(["Latte", "Cortado", "Cold Brew", "Cappuccino", "Flat White"]);
 
   const t = isDark ? darkTheme : lightTheme;
   const s = makeStyles(t);
@@ -31,6 +43,35 @@ export default function App() {
     window.scrollTo(0, 0);
   };
 
+  // Loading splash
+  if (loading) {
+    return (
+      <>
+        <style>{FONTS}</style>
+        <div style={{ background: lightTheme.bg, minHeight: "100vh", width: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ fontFamily: "'Libre Baskerville', serif", fontSize: 36, fontStyle: "italic", color: lightTheme.accent }}>
+            brewly
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // Not logged in — show auth screens
+  if (!user) {
+    const authProps = { navigate, s, t };
+    return (
+      <>
+        <style>{FONTS}</style>
+        <div style={{ background: t.bg, minHeight: "100vh", width: "100%" }}>
+          {screen === "Login"  || screen === "Home" ? <LoginScreen  {...authProps} /> : null}
+          {screen === "SignUp" && <SignUpScreen {...authProps} />}
+        </div>
+      </>
+    );
+  }
+
+  // Logged in — show main app
   const sharedProps = { navigate, s, t, units };
 
   return (
@@ -38,10 +79,10 @@ export default function App() {
       <style>{FONTS}</style>
       <div style={{ background: t.bg, minHeight: "100vh", width: "100%" }}>
         <div style={s.app}>
-          {screen === "Home"           && <HomeScreen         {...sharedProps} favorites={favorites} />}
-          {screen === "Recipes"        && <RecipesScreen      {...sharedProps} />}
+          {screen === "Home"           && <HomeScreen          {...sharedProps} favorites={favorites} />}
+          {screen === "Recipes"        && <RecipesScreen       {...sharedProps} />}
           {screen === "RecipeDetail"   && <RecipeDetailScreen  {...sharedProps} item={selectedItem} />}
-          {screen === "Methods"        && <MethodsScreen      {...sharedProps} />}
+          {screen === "Methods"        && <MethodsScreen       {...sharedProps} />}
           {screen === "MethodDetail"   && <MethodDetailScreen  {...sharedProps} item={selectedItem} />}
           {screen === "EditFavorites"  && <EditFavoritesScreen {...sharedProps} favorites={favorites} setFavorites={setFavorites} />}
           {screen === "Profile"        && (
