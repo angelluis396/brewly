@@ -29,7 +29,7 @@ export default function LoginScreen({ navigate, s, t }) {
       {/* Logo */}
       <div style={{ textAlign: "center", marginBottom: 48 }}>
         <div style={s.logo}>brew<em style={s.logoEm}>ly</em></div>
-        <div style={s.tagline}>The barista in your back pocket.</div>
+        <div style={s.tagline}>Your back pocket barista.</div>
       </div>
 
       {/* Google Button */}

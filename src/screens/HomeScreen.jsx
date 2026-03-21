@@ -19,8 +19,8 @@ export default function HomeScreen({ navigate, s, t, favorites }) {
   return (
     <div>
       <div style={s.header}>
-        <div style={s.logo}>brew<em style={s.logoEm}>ly</em></div>
-        <div style={s.tagline}>The barista in your back pocket.</div>
+        <div style={{...s.logo, cursor: "pointer"}} onClick={() => navigate("Home")}>brew<em style={s.logoEm}>ly</em></div>
+        <div style={s.tagline}>Your back pocket barista.</div>
       </div>
 
       <div style={s.section}>
@@ -55,7 +55,7 @@ export default function HomeScreen({ navigate, s, t, favorites }) {
 
       <div style={{ ...s.section, marginTop: 28 }}>
         <div style={s.sectionRow}>
-          <span style={s.sectionTitle}>Methods</span>
+          <span style={s.sectionTitle}>Brew Methods</span>
           <span style={s.seeAll} onClick={() => navigate("Methods")}>All methods →</span>
         </div>
         <div style={s.recipesScroll}>
