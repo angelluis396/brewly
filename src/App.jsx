@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { darkTheme, lightTheme, makeStyles } from "./theme/theme";
 import { useAuth } from "./context/AuthContext";
 import HomeScreen from "./screens/HomeScreen";
 import RecipesScreen from "./screens/RecipesScreen";
 import RecipeDetailScreen from "./screens/RecipeDetailScreen";
+import VariantDetailScreen from "./screens/VariantDetailScreen";
 import MethodsScreen from "./screens/MethodsScreen";
 import MethodDetailScreen from "./screens/MethodDetailScreen";
 import ProfileScreen from "./screens/ProfileScreen";
@@ -22,7 +23,6 @@ export default function App() {
   const [screen, setScreen] = useState("Home");
   const [selectedItem, setSelectedItem] = useState(null);
 
-  // Derive state from prefs (synced with Supabase)
   const favorites = prefs.favorites;
   const units = prefs.units;
   const isDark = prefs.is_dark;
@@ -31,7 +31,6 @@ export default function App() {
   const setUnits = (val) => savePref("units", val);
   const setIsDark = (val) => savePref("is_dark", val);
 
-  // Default method still local (not critical to sync)
   const [defaultMethod, setDefaultMethod] = useState("Pour Over");
 
   const t = isDark ? darkTheme : lightTheme;
@@ -43,7 +42,6 @@ export default function App() {
     window.scrollTo(0, 0);
   };
 
-  // Loading splash
   if (loading) {
     return (
       <>
@@ -57,21 +55,19 @@ export default function App() {
     );
   }
 
-  // Not logged in — show auth screens
   if (!user) {
     const authProps = { navigate, s, t };
     return (
       <>
         <style>{FONTS}</style>
         <div style={{ background: t.bg, minHeight: "100vh", width: "100%" }}>
-          {screen === "Login"  || screen === "Home" ? <LoginScreen  {...authProps} /> : null}
+          {(screen === "Login" || screen === "Home") && <LoginScreen {...authProps} />}
           {screen === "SignUp" && <SignUpScreen {...authProps} />}
         </div>
       </>
     );
   }
 
-  // Logged in — show main app
   const sharedProps = { navigate, s, t, units };
 
   return (
@@ -79,13 +75,14 @@ export default function App() {
       <style>{FONTS}</style>
       <div style={{ background: t.bg, minHeight: "100vh", width: "100%" }}>
         <div style={s.app}>
-          {screen === "Home"           && <HomeScreen          {...sharedProps} favorites={favorites} />}
-          {screen === "Recipes"        && <RecipesScreen       {...sharedProps} />}
-          {screen === "RecipeDetail"   && <RecipeDetailScreen  {...sharedProps} item={selectedItem} />}
-          {screen === "Methods"        && <MethodsScreen       {...sharedProps} />}
-          {screen === "MethodDetail"   && <MethodDetailScreen  {...sharedProps} item={selectedItem} />}
-          {screen === "EditFavorites"  && <EditFavoritesScreen {...sharedProps} favorites={favorites} setFavorites={setFavorites} />}
-          {screen === "Profile"        && (
+          {screen === "Home"          && <HomeScreen         {...sharedProps} favorites={favorites} />}
+          {screen === "Recipes"       && <RecipesScreen      {...sharedProps} />}
+          {screen === "RecipeDetail"  && <RecipeDetailScreen {...sharedProps} item={selectedItem} favorites={favorites} setFavorites={setFavorites} />}
+          {screen === "VariantDetail" && <VariantDetailScreen {...sharedProps} group={selectedItem} favorites={favorites} setFavorites={setFavorites} />}
+          {screen === "Methods"       && <MethodsScreen      {...sharedProps} />}
+          {screen === "MethodDetail"  && <MethodDetailScreen {...sharedProps} item={selectedItem} />}
+          {screen === "EditFavorites" && <EditFavoritesScreen {...sharedProps} favorites={favorites} setFavorites={setFavorites} />}
+          {screen === "Profile"       && (
             <ProfileScreen
               {...sharedProps}
               setUnits={setUnits}

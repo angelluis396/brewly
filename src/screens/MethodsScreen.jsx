@@ -15,7 +15,7 @@ export default function MethodsScreen({ navigate, s, t }) {
           <span style={s.backArrow} onClick={() => navigate("Home")}>←</span>
           <span style={s.backLabel} onClick={() => navigate("Home")}>Home</span>
         </div>
-        <div style={s.pageTitle}>Brew Methods</div>
+        <div style={s.pageTitle}>Methods</div>
         <div style={s.pageSub}>{METHODS.length} methods · from bean to cup</div>
       </div>
 

@@ -1,8 +1,17 @@
 import NavBar from "../components/NavBar";
 
-export default function RecipeDetailScreen({ item, navigate, s, t, units }) {
+export default function RecipeDetailScreen({ item, navigate, s, t, units, favorites, setFavorites }) {
   const ingredients = units === "ml" ? item.ingredients_ml : item.ingredients_oz;
   const yieldVal = units === "ml" ? `${item.yield_ml}ml` : `${item.yield_oz}oz`;
+  const isFav = favorites.includes(item.name);
+
+  const toggleFavorite = () => {
+    setFavorites(prev =>
+      prev.includes(item.name)
+        ? prev.filter(f => f !== item.name)
+        : [...prev, item.name]
+    );
+  };
 
   return (
     <div>
@@ -78,7 +87,15 @@ export default function RecipeDetailScreen({ item, navigate, s, t, units }) {
         </div>
       </div>
 
-      <button style={s.saveBtn}>♥ &nbsp;Save to Favorites</button>
+      <button onClick={toggleFavorite} style={{
+        ...s.saveBtn,
+        background: isFav ? "transparent" : s.saveBtn.background,
+        border: isFav ? `1px solid ${t.accent}` : "none",
+        color: isFav ? t.accent : "#111009",
+      }}>
+        {isFav ? "♥ \u00a0Saved to Favorites" : "♥ \u00a0Save to Favorites"}
+      </button>
+
       <NavBar current="Recipes" navigate={navigate} s={s} t={t} />
     </div>
   );
