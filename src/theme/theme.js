@@ -15,7 +15,7 @@ export const lightTheme = {
 export const makeStyles = (t) => ({
   app: { width: "100%", maxWidth: 430, margin: "0 auto", background: t.bg, minHeight: "100vh", fontFamily: "'Outfit', sans-serif", color: t.text, paddingBottom: 32, boxSizing: "border-box" },
   globalBg: { background: t.bg, minHeight: "100vh", width: "100%" },
-  header: { padding: "52px 26px 24px", borderBottom: `1px solid ${t.border}` },
+  header: { padding: "16px 26px 24px", borderBottom: `1px solid ${t.border}` },
   backRow: { display: "flex", alignItems: "center", gap: 8, marginBottom: 20 },
   backArrow: { fontSize: 18, color: t.accent, lineHeight: 1, cursor: "pointer" },
   backLabel: { fontSize: 12, color: t.textMuted, fontWeight: 300, cursor: "pointer" },
