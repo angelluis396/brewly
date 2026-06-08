@@ -77,7 +77,7 @@ export default function EspressoEntryDetailScreen({ item, navigate, s, t }) {
 
       <div style={{ padding: "20px 26px 0" }}>
 
-        {/* Roast level */}
+        {/* Roast level  */}
         {item.roast_level && (
           <div style={{ marginBottom: 16 }}>
             <div style={{ fontSize: 10, color: t.accent, letterSpacing: 1, textTransform: "uppercase", fontWeight: 500, marginBottom: 8 }}>
