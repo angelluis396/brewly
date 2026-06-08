@@ -1,5 +1,4 @@
 import { useState } from "react";
-import NavBar from "../components/NavBar";
 import { useJournal } from "../context/JournalContext";
 import { TrashIcon, PlusIcon } from "../components/Icons";
 
@@ -198,7 +197,6 @@ export default function GrindersScreen({ navigate, s, t }) {
         </>
       )}
 
-      <NavBar current="Profile" navigate={navigate} s={s} t={t} />
     </div>
   );
 }
