@@ -52,6 +52,7 @@ export function AuthProvider({ children }) {
         favorites: data.favorites || DEFAULT_PREFS.favorites,
         units: data.units || DEFAULT_PREFS.units,
         is_dark: data.is_dark ?? DEFAULT_PREFS.is_dark,
+        default_method: data.default_method || DEFAULT_PREFS.default_method,
       });
     }
     setLoading(false);
