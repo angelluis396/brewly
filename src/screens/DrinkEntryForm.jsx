@@ -1,5 +1,4 @@
 import { useState } from "react";
-import NavBar from "../components/NavBar";
 import InfoIcon from "../components/InfoIcon";
 import { useJournal } from "../context/JournalContext";
 
@@ -356,7 +355,6 @@ export default function DrinkEntryForm({ navigate, s, t, units, item }) {
         </>
       )}
 
-      <NavBar current="Journal" navigate={navigate} s={s} t={t} />
     </div>
   );
 }

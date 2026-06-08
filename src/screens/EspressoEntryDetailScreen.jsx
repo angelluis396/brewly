@@ -1,5 +1,4 @@
 import { useState } from "react";
-import NavBar from "../components/NavBar";
 import { useJournal } from "../context/JournalContext";
 import { EditIcon, TrashIcon } from "../components/Icons";
 
@@ -77,7 +76,7 @@ export default function EspressoEntryDetailScreen({ item, navigate, s, t }) {
 
       <div style={{ padding: "20px 26px 0" }}>
 
-        {/* Roast level  */}
+        {/* Roast level */}
         {item.roast_level && (
           <div style={{ marginBottom: 16 }}>
             <div style={{ fontSize: 10, color: t.accent, letterSpacing: 1, textTransform: "uppercase", fontWeight: 500, marginBottom: 8 }}>
@@ -211,7 +210,6 @@ export default function EspressoEntryDetailScreen({ item, navigate, s, t }) {
         </>
       )}
 
-      <NavBar current="Journal" navigate={navigate} s={s} t={t} />
     </div>
   );
 }

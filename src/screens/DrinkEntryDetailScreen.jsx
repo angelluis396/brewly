@@ -1,5 +1,4 @@
 import { useState } from "react";
-import NavBar from "../components/NavBar";
 import { useJournal } from "../context/JournalContext";
 import { EditIcon, TrashIcon } from "../components/Icons";
 
@@ -163,7 +162,6 @@ export default function DrinkEntryDetailScreen({ item, navigate, s, t }) {
         </>
       )}
 
-      <NavBar current="Journal" navigate={navigate} s={s} t={t} />
     </div>
   );
 }
