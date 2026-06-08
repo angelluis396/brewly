@@ -14,8 +14,8 @@ import SignUpScreen from "./screens/SignUpScreen";
 import JournalScreen from "./screens/JournalScreen";
 import DrinkEntryForm from "./screens/DrinkEntryForm";
 import EspressoEntryForm from "./screens/EspressoEntryForm";
-import DrinkEntryDetailScreen from "./screens/DrinkEntryDetailScreen";
-import EspressoEntryDetailScreen from "./screens/EspressoEntryDetailScreen";
+import DrinkEntryDetailScreen from "./screens/Drinkentrydetailscreen";
+import EspressoEntryDetailScreen from "./screens/Espressoentrydetailscreen";
 import GrindersScreen from "./screens/GrindersScreen";
 
 const FONTS = `
@@ -86,7 +86,7 @@ export default function App() {
           {screen === "RecipeDetail"         && <RecipeDetailScreen         {...sharedProps} item={selectedItem} favorites={favorites} setFavorites={setFavorites} />}
           {screen === "VariantDetail"        && <VariantDetailScreen        {...sharedProps} group={selectedItem} favorites={favorites} setFavorites={setFavorites} />}
           {screen === "Methods"              && <MethodsScreen              {...sharedProps} />}
-          {screen === "MethodDetail"         && <MethodDetailScreen         {...sharedProps} item={selectedItem} />}
+          {screen === "MethodDetail"         && <MethodDetailScreen         {...sharedProps} item={selectedItem} favorites={favorites} setFavorites={setFavorites} />}
           {screen === "EditFavorites"        && <EditFavoritesScreen        {...sharedProps} favorites={favorites} setFavorites={setFavorites} />}
           {screen === "Journal"              && <JournalScreen              {...sharedProps} />}
           {screen === "DrinkEntryForm"       && <DrinkEntryForm             {...sharedProps} item={selectedItem} />}

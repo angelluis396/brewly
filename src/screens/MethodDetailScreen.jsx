@@ -2,9 +2,18 @@ import NavBar from "../components/NavBar";
 
 const GRIND_HEIGHTS = [16, 22, 30, 38, 44, 48, 52];
 
-export default function MethodDetailScreen({ item, navigate, s, t, units }) {
+export default function MethodDetailScreen({ item, navigate, s, t, units, favorites, setFavorites }) {
   const specs = units === "ml" ? item.specs_ml : item.specs_oz;
   const yieldVal = units === "ml" ? `${item.yield_ml}ml` : `${item.yield_oz}oz`;
+  const isFav = favorites.includes(item.name);
+
+  const toggleFavorite = () => {
+    setFavorites(prev =>
+      prev.includes(item.name)
+        ? prev.filter(f => f !== item.name)
+        : [...prev, item.name]
+    );
+  };
 
   return (
     <div>
@@ -96,7 +105,14 @@ export default function MethodDetailScreen({ item, navigate, s, t, units }) {
         </div>
       </div>
 
-      <button style={s.saveBtn}>♥ &nbsp;Save to Favorites</button>
+      <button onClick={toggleFavorite} style={{
+        ...s.saveBtn,
+        background: isFav ? "transparent" : s.saveBtn.background,
+        border: isFav ? `1px solid ${t.accent}` : "none",
+        color: isFav ? t.accent : "#111009",
+      }}>
+        {isFav ? "♥ \u00a0Saved to Favorites" : "♥ \u00a0Save to Favorites"}
+      </button>
       <NavBar current="Methods" navigate={navigate} s={s} t={t} />
     </div>
   );
