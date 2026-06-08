@@ -14,8 +14,8 @@ import SignUpScreen from "./screens/SignUpScreen";
 import JournalScreen from "./screens/JournalScreen";
 import DrinkEntryForm from "./screens/DrinkEntryForm";
 import EspressoEntryForm from "./screens/EspressoEntryForm";
-import DrinkEntryDetailScreen from "./screens/Drinkentrydetailscreen";
-import EspressoEntryDetailScreen from "./screens/Espressoentrydetailscreen";
+import DrinkEntryDetailScreen from "./screens/DrinkEntryDetailScreen";
+import EspressoEntryDetailScreen from "./screens/EspressoEntryDetailScreen";
 import GrindersScreen from "./screens/GrindersScreen";
 
 const FONTS = `
