@@ -1,7 +1,7 @@
 import { useState } from "react";
 import NavBar from "../components/NavBar";
-import InfoIcon from "../components/InfoIcon";
 import { useJournal } from "../context/JournalContext";
+import InfoIcon from "../components/InfoIcon";
 
 const ROAST_LEVELS = [
   { id: "Light", label: "Light" },
