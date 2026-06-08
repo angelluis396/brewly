@@ -1,7 +1,7 @@
 import { useState } from "react";
 import NavBar from "../components/NavBar";
 import { useJournal } from "../context/JournalContext";
-import { EditIcon, TrashIcon, PlusIcon } from "../components/Icons";
+import { PlusIcon } from "../components/Icons";
 
 const ROAST_LEVELS = ["Light", "Lt-Med", "Medium", "Md-Dk", "Dark"];
 
@@ -31,24 +31,20 @@ function calculateRatio(dose, yieldVal) {
   return `1:${ratio}`;
 }
 
-function DrinkCard({ drink, onEdit, onDelete, t, s }) {
+function DrinkCard({ drink, onClick, t, s }) {
   return (
-    <div style={s.entryCard}>
+    <div style={{ ...s.entryCard, cursor: "pointer" }} onClick={onClick}>
       <div style={s.entryHead}>
         <div>
           <div style={s.entryName}>{drink.name}</div>
           <div style={s.entryDate}>{formatDate(drink.created_at)}</div>
-        </div>
-        <div style={s.entryActions}>
-          <div style={s.iconBtn} onClick={onEdit}><EditIcon color={t.textMuted} /></div>
-          <div style={s.iconBtn} onClick={onDelete}><TrashIcon color={t.textMuted} /></div>
         </div>
       </div>
       <div style={s.entryMeta}>
         <div style={s.metaItem}>
           <span style={s.metaLabel}>Milk</span>
           <span style={drink.milk_type ? s.metaVal : s.metaValNone}>
-            {drink.milk_type ? `${drink.milk_amount}${drink.milk_unit} ${drink.milk_type.toLowerCase()}` : "None"}
+            {drink.milk_type ? `${drink.milk_amount}${drink.milk_unit} ${drink.milk_type}` : "None"}
           </span>
         </div>
         <div style={s.metaItem}>
@@ -63,14 +59,14 @@ function DrinkCard({ drink, onEdit, onDelete, t, s }) {
   );
 }
 
-function EspressoCard({ entry, grinders, onEdit, onDelete, t, s }) {
+function EspressoCard({ entry, grinders, onClick, t, s }) {
   const grinder = grinders.find(g => g.id === entry.grinder_id);
   const roastIdx = ROAST_LEVELS.indexOf(entry.roast_level);
   const ratio = calculateRatio(entry.dose, entry.yield);
   const roastDate = formatRoastDate(entry.roast_date);
 
   return (
-    <div style={s.entryCard}>
+    <div style={{ ...s.entryCard, cursor: "pointer" }} onClick={onClick}>
       <div style={s.entryHead}>
         <div>
           <div style={s.entryName}>{entry.bean_name}</div>
@@ -78,10 +74,6 @@ function EspressoCard({ entry, grinders, onEdit, onDelete, t, s }) {
             {formatDate(entry.created_at)}
             {roastDate && ` · Roasted ${roastDate}`}
           </div>
-        </div>
-        <div style={s.entryActions}>
-          <div style={s.iconBtn} onClick={onEdit}><EditIcon color={t.textMuted} /></div>
-          <div style={s.iconBtn} onClick={onDelete}><TrashIcon color={t.textMuted} /></div>
         </div>
       </div>
 
@@ -140,23 +132,13 @@ function EspressoCard({ entry, grinders, onEdit, onDelete, t, s }) {
 export default function JournalScreen({ navigate, s, t }) {
   const [tab, setTab] = useState("drinks");
   const [showPicker, setShowPicker] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(null);
-  const { drinks, espresso, grinders, deleteDrink, deleteEspresso } = useJournal();
-
-  const handleDelete = async () => {
-    if (!confirmDelete) return;
-    if (confirmDelete.type === "drink") await deleteDrink(confirmDelete.id);
-    else await deleteEspresso(confirmDelete.id);
-    setConfirmDelete(null);
-  };
+  const { drinks, espresso, grinders } = useJournal();
 
   const journalStyles = {
     entryCard: { background: t.bg2, border: `1px solid ${t.border}`, borderRadius: 14, padding: 14, marginBottom: 10 },
     entryHead: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 },
     entryName: { fontFamily: "'Libre Baskerville', serif", fontSize: 16, fontStyle: "italic", color: t.text, marginBottom: 3 },
     entryDate: { fontSize: 9, color: t.accent, letterSpacing: 1, textTransform: "uppercase" },
-    entryActions: { display: "flex", gap: 6, marginLeft: 10 },
-    iconBtn: { width: 28, height: 28, borderRadius: 7, border: `1px solid ${t.border}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" },
     entryMeta: { display: "flex", gap: 14, flexWrap: "wrap", marginTop: 6, paddingTop: 8, borderTop: `1px solid ${t.border}` },
     metaItem: { display: "flex", flexDirection: "column" },
     metaLabel: { fontSize: 9, color: t.textMuted, letterSpacing: 0.5, textTransform: "uppercase" },
@@ -176,74 +158,71 @@ export default function JournalScreen({ navigate, s, t }) {
   const list = tab === "drinks" ? drinks : espresso;
 
   return (
-    <div>
-      <div style={{ ...s.header, display: "flex", justifyContent: "space-between", alignItems: "flex-start", paddingBottom: 20 }}>
-        <div>
-          <div style={s.pageTitle}>Journal</div>
-          <div style={s.pageSub}>Log every brew, track your favorites.</div>
-        </div>
-        <div
-          onClick={() => setShowPicker(true)}
-          style={{
-            width: 36, height: 36, borderRadius: "50%", background: t.accent,
-            color: "#fff", display: "flex", alignItems: "center", justifyContent: "center",
-            cursor: "pointer", marginTop: 4,
-          }}
-        >
-          <PlusIcon size={18} color="#fff" />
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", margin: "0 26px", borderBottom: `1px solid ${t.border}` }}>
-        <div
-          onClick={() => setTab("drinks")}
-          style={{
-            padding: "14px 0", textAlign: "center", fontSize: 13,
-            fontWeight: tab === "drinks" ? 500 : 400,
-            color: tab === "drinks" ? t.text : t.textMuted,
-            borderBottom: tab === "drinks" ? `2px solid ${t.accent}` : "2px solid transparent",
-            marginBottom: -1, cursor: "pointer",
-          }}
-        >
-          Coffee Drinks
-        </div>
-        <div
-          onClick={() => setTab("espresso")}
-          style={{
-            padding: "14px 0", textAlign: "center", fontSize: 13,
-            fontWeight: tab === "espresso" ? 500 : 400,
-            color: tab === "espresso" ? t.text : t.textMuted,
-            borderBottom: tab === "espresso" ? `2px solid ${t.accent}` : "2px solid transparent",
-            marginBottom: -1, cursor: "pointer",
-          }}
-        >
-          Espresso
-        </div>
-      </div>
-
-      {/* Entries */}
-      <div style={{ padding: "14px 26px 0" }}>
-        {list.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "40px 20px", color: t.textMuted, fontSize: 13, fontWeight: 300 }}>
-            No entries yet. Tap the + button to log your first brew.
+    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+      <div style={{ flex: 1 }}>
+        <div style={{ ...s.header, display: "flex", justifyContent: "space-between", alignItems: "flex-start", paddingBottom: 20 }}>
+          <div>
+            <div style={s.pageTitle}>Journal</div>
+            <div style={s.pageSub}>Log every brew, track your favorites.</div>
           </div>
-        ) : (
-          list.map(item =>
-            tab === "drinks"
-              ? <DrinkCard key={item.id} drink={item} t={t} s={journalStyles}
-                  onEdit={() => navigate("DrinkEntryForm", item)}
-                  onDelete={() => setConfirmDelete({ type: "drink", id: item.id, name: item.name })}
-                />
-              : <EspressoCard key={item.id} entry={item} grinders={grinders} t={t} s={journalStyles}
-                  onEdit={() => navigate("EspressoEntryForm", item)}
-                  onDelete={() => setConfirmDelete({ type: "espresso", id: item.id, name: item.bean_name })}
-                />
-          )
-        )}
+          <div
+            onClick={() => setShowPicker(true)}
+            style={{
+              width: 36, height: 36, borderRadius: "50%", background: t.accent,
+              color: "#fff", display: "flex", alignItems: "center", justifyContent: "center",
+              cursor: "pointer", marginTop: 4,
+            }}
+          >
+            <PlusIcon size={18} color="#fff" />
+          </div>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", margin: "0 26px", borderBottom: `1px solid ${t.border}` }}>
+          <div
+            onClick={() => setTab("drinks")}
+            style={{
+              padding: "14px 0", textAlign: "center", fontSize: 13,
+              fontWeight: tab === "drinks" ? 500 : 400,
+              color: tab === "drinks" ? t.text : t.textMuted,
+              borderBottom: tab === "drinks" ? `2px solid ${t.accent}` : "2px solid transparent",
+              marginBottom: -1, cursor: "pointer",
+            }}
+          >
+            Coffee Drinks
+          </div>
+          <div
+            onClick={() => setTab("espresso")}
+            style={{
+              padding: "14px 0", textAlign: "center", fontSize: 13,
+              fontWeight: tab === "espresso" ? 500 : 400,
+              color: tab === "espresso" ? t.text : t.textMuted,
+              borderBottom: tab === "espresso" ? `2px solid ${t.accent}` : "2px solid transparent",
+              marginBottom: -1, cursor: "pointer",
+            }}
+          >
+            Espresso
+          </div>
+        </div>
+
+        <div style={{ padding: "14px 26px 0", minHeight: 200 }}>
+          {list.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "60px 20px", color: t.textMuted, fontSize: 13, fontWeight: 300 }}>
+              No entries yet. Tap the + button to log your first brew.
+            </div>
+          ) : (
+            list.map(item =>
+              tab === "drinks"
+                ? <DrinkCard key={item.id} drink={item} t={t} s={journalStyles}
+                    onClick={() => navigate("DrinkEntryDetail", item)}
+                  />
+                : <EspressoCard key={item.id} entry={item} grinders={grinders} t={t} s={journalStyles}
+                    onClick={() => navigate("EspressoEntryDetail", item)}
+                  />
+            )
+          )}
+        </div>
       </div>
 
-      {/* Picker bottom sheet */}
       {showPicker && (
         <>
           <div onClick={() => setShowPicker(false)} style={{ position: "fixed", inset: 0, background: "rgba(28,26,19,0.55)", zIndex: 200 }} />
@@ -290,40 +269,6 @@ export default function JournalScreen({ navigate, s, t }) {
             >
               Cancel
             </button>
-          </div>
-        </>
-      )}
-
-      {/* Delete confirmation */}
-      {confirmDelete && (
-        <>
-          <div onClick={() => setConfirmDelete(null)} style={{ position: "fixed", inset: 0, background: "rgba(28,26,19,0.55)", zIndex: 200 }} />
-          <div style={{
-            position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)",
-            width: "calc(100% - 40px)", maxWidth: 320,
-            background: t.bg, border: `1px solid ${t.border}`, borderRadius: 16,
-            padding: 22, zIndex: 201,
-          }}>
-            <div style={{ fontFamily: "'Libre Baskerville', serif", fontSize: 18, fontStyle: "italic", color: t.text, marginBottom: 8 }}>
-              Delete entry?
-            </div>
-            <div style={{ fontSize: 13, color: t.textMuted, fontWeight: 300, marginBottom: 18, lineHeight: 1.5 }}>
-              "{confirmDelete.name}" will be permanently removed.
-            </div>
-            <div style={{ display: "flex", gap: 8 }}>
-              <button
-                onClick={() => setConfirmDelete(null)}
-                style={{ flex: 1, padding: 12, background: "transparent", border: `1px solid ${t.border}`, borderRadius: 10, fontFamily: "'Outfit', sans-serif", fontSize: 13, color: t.text, cursor: "pointer" }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDelete}
-                style={{ flex: 1, padding: 12, background: "#E24B4A", border: "none", borderRadius: 10, fontFamily: "'Outfit', sans-serif", fontSize: 13, color: "#fff", fontWeight: 500, cursor: "pointer" }}
-              >
-                Delete
-              </button>
-            </div>
           </div>
         </>
       )}

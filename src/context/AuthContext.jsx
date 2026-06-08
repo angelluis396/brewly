@@ -7,6 +7,7 @@ const DEFAULT_PREFS = {
   favorites: ["Latte", "Cortado", "Cold Brew", "Cappuccino", "Flat White"],
   units: "ml",
   is_dark: false,
+  default_method: "Pour Over",
 };
 
 export function AuthProvider({ children }) {

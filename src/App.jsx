@@ -14,6 +14,8 @@ import SignUpScreen from "./screens/SignUpScreen";
 import JournalScreen from "./screens/JournalScreen";
 import DrinkEntryForm from "./screens/DrinkEntryForm";
 import EspressoEntryForm from "./screens/EspressoEntryForm";
+import DrinkEntryDetailScreen from "./screens/DrinkEntryDetailScreen";
+import EspressoEntryDetailScreen from "./screens/EspressoEntryDetailScreen";
 import GrindersScreen from "./screens/GrindersScreen";
 
 const FONTS = `
@@ -30,12 +32,12 @@ export default function App() {
   const favorites = prefs.favorites;
   const units = prefs.units;
   const isDark = prefs.is_dark;
+  const defaultMethod = prefs.default_method || "Pour Over";
 
   const setFavorites = (val) => savePref("favorites", typeof val === "function" ? val(favorites) : val);
   const setUnits = (val) => savePref("units", val);
   const setIsDark = (val) => savePref("is_dark", val);
-
-  const [defaultMethod, setDefaultMethod] = useState("Pour Over");
+  const setDefaultMethod = (val) => savePref("default_method", val);
 
   const t = isDark ? darkTheme : lightTheme;
   const s = makeStyles(t);
@@ -79,18 +81,20 @@ export default function App() {
       <style>{FONTS}</style>
       <div style={{ background: t.bg, minHeight: "100vh", width: "100%" }}>
         <div style={s.app}>
-          {screen === "Home"               && <HomeScreen          {...sharedProps} favorites={favorites} />}
-          {screen === "Recipes"            && <RecipesScreen       {...sharedProps} />}
-          {screen === "RecipeDetail"       && <RecipeDetailScreen  {...sharedProps} item={selectedItem} favorites={favorites} setFavorites={setFavorites} />}
-          {screen === "VariantDetail"      && <VariantDetailScreen {...sharedProps} group={selectedItem} favorites={favorites} setFavorites={setFavorites} />}
-          {screen === "Methods"            && <MethodsScreen       {...sharedProps} />}
-          {screen === "MethodDetail"       && <MethodDetailScreen  {...sharedProps} item={selectedItem} />}
-          {screen === "EditFavorites"      && <EditFavoritesScreen {...sharedProps} favorites={favorites} setFavorites={setFavorites} />}
-          {screen === "Journal"            && <JournalScreen       {...sharedProps} />}
-          {screen === "DrinkEntryForm"     && <DrinkEntryForm      {...sharedProps} item={selectedItem} />}
-          {screen === "EspressoEntryForm"  && <EspressoEntryForm   {...sharedProps} item={selectedItem} />}
-          {screen === "Grinders"           && <GrindersScreen      {...sharedProps} />}
-          {screen === "Profile"            && (
+          {screen === "Home"                 && <HomeScreen                 {...sharedProps} favorites={favorites} />}
+          {screen === "Recipes"              && <RecipesScreen              {...sharedProps} />}
+          {screen === "RecipeDetail"         && <RecipeDetailScreen         {...sharedProps} item={selectedItem} favorites={favorites} setFavorites={setFavorites} />}
+          {screen === "VariantDetail"        && <VariantDetailScreen        {...sharedProps} group={selectedItem} favorites={favorites} setFavorites={setFavorites} />}
+          {screen === "Methods"              && <MethodsScreen              {...sharedProps} />}
+          {screen === "MethodDetail"         && <MethodDetailScreen         {...sharedProps} item={selectedItem} />}
+          {screen === "EditFavorites"        && <EditFavoritesScreen        {...sharedProps} favorites={favorites} setFavorites={setFavorites} />}
+          {screen === "Journal"              && <JournalScreen              {...sharedProps} />}
+          {screen === "DrinkEntryForm"       && <DrinkEntryForm             {...sharedProps} item={selectedItem} />}
+          {screen === "EspressoEntryForm"    && <EspressoEntryForm          {...sharedProps} item={selectedItem} />}
+          {screen === "DrinkEntryDetail"     && <DrinkEntryDetailScreen     {...sharedProps} item={selectedItem} />}
+          {screen === "EspressoEntryDetail" && <EspressoEntryDetailScreen   {...sharedProps} item={selectedItem} />}
+          {screen === "Grinders"             && <GrindersScreen             {...sharedProps} />}
+          {screen === "Profile"              && (
             <ProfileScreen
               {...sharedProps}
               setUnits={setUnits}
