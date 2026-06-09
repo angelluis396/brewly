@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { darkTheme, lightTheme, makeStyles } from "./theme/theme";
 import { useAuth } from "./context/AuthContext";
+import { useSwipe } from "./hooks/useSwipe";
 import HomeScreen from "./screens/HomeScreen";
 import RecipesScreen from "./screens/RecipesScreen";
 import RecipeDetailScreen from "./screens/RecipeDetailScreen";
@@ -23,6 +24,23 @@ const FONTS = `
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body, #root { width: 100%; min-height: 100vh; margin: 0; padding: 0; }
 `;
+
+// Nav tab order for left/right swipe between tabs
+const TAB_ORDER = ["Home", "Recipes", "Journal", "Methods", "Profile"];
+
+// Map of detail / sub-screen → which screen to go back to on swipe right
+const BACK_MAP = {
+  RecipeDetail: "Recipes",
+  VariantDetail: "Recipes",
+  MethodDetail: "Methods",
+  EditFavorites: "Home",
+  Journal: null, // it's a top-level tab
+  DrinkEntryForm: "Journal",
+  EspressoEntryForm: "Journal",
+  DrinkEntryDetail: "Journal",
+  EspressoEntryDetail: "Journal",
+  Grinders: "Profile",
+};
 
 export default function App() {
   const { user, loading, prefs, savePref } = useAuth();
@@ -47,6 +65,31 @@ export default function App() {
     setSelectedItem(item);
     window.scrollTo(0, 0);
   };
+
+  // ─── Swipe gestures ──────────────────────────────────────────────────
+  // Right swipe from left edge → go back to parent screen
+  // Left/right swipes (anywhere) when on a nav tab → switch tabs
+  const isOnNavTab = TAB_ORDER.includes(screen);
+  const currentTabIdx = TAB_ORDER.indexOf(screen);
+
+  useSwipe({
+    edgeOnly: !isOnNavTab, // edge-only when on a detail page; full-width when on a nav tab
+    onSwipeRight: () => {
+      if (isOnNavTab) {
+        // Swipe right = previous tab
+        if (currentTabIdx > 0) navigate(TAB_ORDER[currentTabIdx - 1]);
+      } else {
+        // Swipe right from edge = go back
+        const back = BACK_MAP[screen];
+        if (back) navigate(back);
+      }
+    },
+    onSwipeLeft: () => {
+      if (isOnNavTab && currentTabIdx < TAB_ORDER.length - 1) {
+        navigate(TAB_ORDER[currentTabIdx + 1]);
+      }
+    },
+  });
 
   if (loading) {
     return (
@@ -92,7 +135,7 @@ export default function App() {
           {screen === "DrinkEntryForm"       && <DrinkEntryForm             {...sharedProps} item={selectedItem} />}
           {screen === "EspressoEntryForm"    && <EspressoEntryForm          {...sharedProps} item={selectedItem} />}
           {screen === "DrinkEntryDetail"     && <DrinkEntryDetailScreen     {...sharedProps} item={selectedItem} />}
-          {screen === "EspressoEntryDetail" && <EspressoEntryDetailScreen   {...sharedProps} item={selectedItem} />}
+          {screen === "EspressoEntryDetail"  && <EspressoEntryDetailScreen  {...sharedProps} item={selectedItem} />}
           {screen === "Grinders"             && <GrindersScreen             {...sharedProps} />}
           {screen === "Profile"              && (
             <ProfileScreen
