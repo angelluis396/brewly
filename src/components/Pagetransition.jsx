@@ -1,19 +1,14 @@
-import { useRef, useEffect } from "react";
-import { motion, AnimatePresence, useMotionValue, animate } from "framer-motion";
+import { useRef, useEffect, useState } from "react";
+import { motion, useMotionValue, animate } from "framer-motion";
 
 /**
- * PageTransition wraps each screen.
+ * PageTransition — defensive version with strict state guards.
  *
- * Behavior:
- *  - When screenKey changes, the new page slides in based on `direction`:
- *      "forward" — new page slides in from right, current slides out left
- *      "back"    — new page slides in from left, current slides out right
- *  - When canSwipeBack is true (detail pages), dragging from the left edge
- *    moves the page horizontally with the finger and completes the back
- *    navigation if released past a threshold.
- *  - When canSwipeTabs is true (nav tabs), a horizontal swipe past 60px
- *    triggers onSwipeLeft / onSwipeRight (no follow-finger — pages just
- *    transition with the spring animation above).
+ * Key fixes:
+ *  - Gestures are completely disabled while animating
+ *  - Animation always resets the motion value cleanly
+ *  - Active animations are cancelled before starting a new one
+ *  - Touch state is always cleared on touchend, even if gesture didn't fire
  */
 export default function PageTransition({
   screenKey,
@@ -28,72 +23,116 @@ export default function PageTransition({
 }) {
   const x = useMotionValue(0);
   const startTouch = useRef(null);
-  const isDraggingBack = useRef(false);
+  const gestureType = useRef(null); // "back" | "tab" | null
+  const isAnimating = useRef(false);
+  const activeAnimation = useRef(null);
   const containerRef = useRef(null);
 
-  // Reset x position whenever screenKey changes
-  useEffect(() => {
-    x.set(0);
-  }, [screenKey]);
+  const [renderedKey, setRenderedKey] = useState(screenKey);
 
+  // Stop any active animation
+  const cancelAnimation = () => {
+    if (activeAnimation.current) {
+      activeAnimation.current.stop();
+      activeAnimation.current = null;
+    }
+  };
+
+  // Run a spring animation safely
+  const runAnimation = (target, onComplete) => {
+    cancelAnimation();
+    isAnimating.current = true;
+    activeAnimation.current = animate(x, target, {
+      type: "spring",
+      stiffness: 320,
+      damping: 35,
+      onComplete: () => {
+        isAnimating.current = false;
+        activeAnimation.current = null;
+        if (onComplete) onComplete();
+      },
+    });
+  };
+
+  // Slide new screen in when screenKey changes
+  useEffect(() => {
+    if (screenKey === renderedKey) return;
+
+    cancelAnimation();
+    const startX = direction === "forward" ? window.innerWidth : -window.innerWidth * 0.3;
+    x.set(startX);
+    setRenderedKey(screenKey);
+    runAnimation(0);
+
+    // Clear any lingering gesture state
+    startTouch.current = null;
+    gestureType.current = null;
+  }, [screenKey, direction]);
+
+  // ─── Touch handlers ─────────────────────────────────────────────────
   const handleTouchStart = (e) => {
+    // Block all gestures while animating
+    if (isAnimating.current) {
+      startTouch.current = null;
+      gestureType.current = null;
+      return;
+    }
+
     const t = e.touches[0];
     startTouch.current = { x: t.clientX, y: t.clientY, time: Date.now() };
-    isDraggingBack.current = canSwipeBack && t.clientX <= 30;
+
+    // Determine what kind of gesture this could be
+    if (canSwipeBack && t.clientX <= 30) {
+      gestureType.current = "back";
+    } else if (canSwipeTabs) {
+      gestureType.current = "tab";
+    } else {
+      gestureType.current = null;
+    }
   };
 
   const handleTouchMove = (e) => {
-    if (!startTouch.current || !isDraggingBack.current) return;
+    if (!startTouch.current || gestureType.current !== "back") return;
     const t = e.touches[0];
     const dx = t.clientX - startTouch.current.x;
     if (dx > 0) x.set(dx);
   };
 
   const handleTouchEnd = (e) => {
-    if (!startTouch.current) return;
+    const start = startTouch.current;
+    const gesture = gestureType.current;
+
+    // Always clear gesture state immediately
+    startTouch.current = null;
+    gestureType.current = null;
+
+    if (!start) return;
+
     const t = e.changedTouches[0];
-    const dx = t.clientX - startTouch.current.x;
-    const dy = Math.abs(t.clientY - startTouch.current.y);
-    const elapsed = Date.now() - startTouch.current.time;
+    const dx = t.clientX - start.x;
+    const dy = Math.abs(t.clientY - start.y);
+    const elapsed = Date.now() - start.time;
     const width = containerRef.current?.offsetWidth || window.innerWidth;
 
-    // ── Back-from-edge gesture (follow-finger) ──
-    if (isDraggingBack.current) {
+    // ── Back-from-edge gesture ──
+    if (gesture === "back") {
       if (dx > width * 0.35 && onSwipeBack) {
-        // Complete the back animation
-        animate(x, width, {
-          type: "spring",
-          stiffness: 350,
-          damping: 35,
-          onComplete: () => {
-            onSwipeBack();
-          },
+        runAnimation(width, () => {
+          x.set(0); // Reset for next page
+          onSwipeBack();
         });
       } else {
-        // Snap back
-        animate(x, 0, { type: "spring", stiffness: 400, damping: 38 });
+        // Snap back to 0
+        runAnimation(0);
       }
-      isDraggingBack.current = false;
-      startTouch.current = null;
       return;
     }
 
-    // ── Tab swipe (no follow-finger, just trigger transition) ──
-    if (canSwipeTabs && elapsed < 500 && dy < 80) {
+    // ── Tab swipe ──
+    if (gesture === "tab" && elapsed < 500 && dy < 80) {
       if (dx > 60 && onSwipeRight) onSwipeRight();
       else if (dx < -60 && onSwipeLeft) onSwipeLeft();
     }
-
-    startTouch.current = null;
-  };
-
-  // Animation variants
-  const variants = {
-    enterForward: { x: "100%", opacity: 1 },
-    enterBack: { x: "-25%", opacity: 0.7 },
-    center: { x: 0, opacity: 1 },
-    exitForward: { x: "-25%", opacity: 0.7 },
-    exitBack: { x: "100%", opacity: 1 },
   };
 
   return (
@@ -102,6 +141,7 @@ export default function PageTransition({
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchEnd}
       style={{
         position: "relative",
         width: "100%",
@@ -110,27 +150,16 @@ export default function PageTransition({
         background: bgColor,
       }}
     >
-      <AnimatePresence initial={false} mode="popLayout">
-        <motion.div
-          key={screenKey}
-          initial={direction === "forward" ? "enterForward" : "enterBack"}
-          animate="center"
-          exit={direction === "forward" ? "exitForward" : "exitBack"}
-          variants={variants}
-          transition={{ type: "spring", stiffness: 320, damping: 32 }}
-          style={{
-            x,
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            minHeight: "100vh",
-            background: bgColor,
-          }}
-        >
-          {children}
-        </motion.div>
-      </AnimatePresence>
+      <motion.div
+        style={{
+          x,
+          width: "100%",
+          minHeight: "100vh",
+          background: bgColor,
+        }}
+      >
+        {children}
+      </motion.div>
     </div>
   );
 }
