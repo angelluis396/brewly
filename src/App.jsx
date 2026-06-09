@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { darkTheme, lightTheme, makeStyles } from "./theme/theme";
 import { useAuth } from "./context/AuthContext";
-import PageTransition from "./components/PageTransition";
+import PageTransition from "./components/Pagetransition";
 import HomeScreen from "./screens/HomeScreen";
 import RecipesScreen from "./screens/RecipesScreen";
 import RecipeDetailScreen from "./screens/RecipeDetailScreen";
