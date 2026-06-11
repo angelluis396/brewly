@@ -1,97 +1,169 @@
 import { useState, useRef } from "react";
+import { motion, Reorder, AnimatePresence, useMotionValue, animate } from "framer-motion";
 import NavBar from "../components/NavBar";
 import { RECIPES, RECIPE_GROUPS } from "../data/recipes";
+import { TrashIcon } from "../components/Icons";
 
 const ALL_RECIPES = [
   ...RECIPE_GROUPS.map(g => ({ name: g.name, label: g.label, strength: g.strength, imgSm: g.imgSm, type: "group" })),
   ...RECIPES.map(r => ({ name: r.name, label: r.label, strength: r.strength, imgSm: r.imgSm, type: "recipe" })),
 ].sort((a, b) => a.name.localeCompare(b.name));
 
-// Drag handle SVG
 const DragHandle = ({ color }) => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="3" y1="8" x2="21" y2="8" />
-    <line x1="3" y1="16" x2="21" y2="16" />
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="4" y1="9" x2="20" y2="9" />
+    <line x1="4" y1="15" x2="20" y2="15" />
   </svg>
 );
 
-export default function EditFavoritesScreen({ navigate, s, t, favorites, setFavorites }) {
-  const [draggingIdx, setDraggingIdx] = useState(null);
-  const [dragOverIdx, setDragOverIdx] = useState(null);
-  const touchStartY = useRef(null);
-  const itemRefs = useRef({});
+// ─── Individual draggable favorite item with swipe-to-remove ──────────
+function FavoriteItem({ item, onRemove, t, s, isLast }) {
+  const x = useMotionValue(0);
+  const [revealed, setRevealed] = useState(false);
+  const startX = useRef(null);
+  const REVEAL_DISTANCE = 80;
 
-  const toggle = (name) => {
-    setFavorites(prev =>
-      prev.includes(name) ? prev.filter(f => f !== name) : [...prev, name]
-    );
-  };
-
-  // ─── Reorder logic ──────────────────────────────────────────────
-  const reorderFavorites = (fromIdx, toIdx) => {
-    if (fromIdx === toIdx) return;
-    setFavorites(prev => {
-      const updated = [...prev];
-      const [moved] = updated.splice(fromIdx, 1);
-      updated.splice(toIdx, 0, moved);
-      return updated;
-    });
+  const handleTouchStart = (e) => {
+    startX.current = e.touches[0].clientX;
   };
 
-  // ─── Desktop HTML5 drag events ──────────────────────────────────
-  const handleDragStart = (idx) => setDraggingIdx(idx);
-  const handleDragOver = (e, idx) => {
-    e.preventDefault();
-    setDragOverIdx(idx);
-  };
-  const handleDrop = (e, idx) => {
-    e.preventDefault();
-    if (draggingIdx !== null) reorderFavorites(draggingIdx, idx);
-    setDraggingIdx(null);
-    setDragOverIdx(null);
-  };
-  const handleDragEnd = () => {
-    setDraggingIdx(null);
-    setDragOverIdx(null);
-  };
-
-  // ─── Mobile touch drag ──────────────────────────────────────────
-  const handleTouchStart = (e, idx) => {
-    touchStartY.current = e.touches[0].clientY;
-    setDraggingIdx(idx);
-  };
   const handleTouchMove = (e) => {
-    if (draggingIdx === null) return;
-    e.preventDefault();
-    const touchY = e.touches[0].clientY;
-
-    // Find which item we're hovering over by checking each item's bounding box
-    let foundIdx = null;
-    Object.entries(itemRefs.current).forEach(([idx, el]) => {
-      if (!el) return;
-      const rect = el.getBoundingClientRect();
-      if (touchY >= rect.top && touchY <= rect.bottom) {
-        foundIdx = Number(idx);
-      }
-    });
-    if (foundIdx !== null && foundIdx !== dragOverIdx) {
-      setDragOverIdx(foundIdx);
+    if (startX.current === null) return;
+    const dx = e.touches[0].clientX - startX.current;
+    // Allow swipe in either direction, follow finger
+    if (Math.abs(dx) > 8) {
+      x.set(dx > 0 ? Math.min(dx, REVEAL_DISTANCE * 1.5) : Math.max(dx, -REVEAL_DISTANCE * 1.5));
     }
   };
+
   const handleTouchEnd = () => {
-    if (draggingIdx !== null && dragOverIdx !== null) {
-      reorderFavorites(draggingIdx, dragOverIdx);
+    if (startX.current === null) return;
+    const currentX = x.get();
+    if (Math.abs(currentX) > REVEAL_DISTANCE * 0.6) {
+      // Snap to revealed state — same direction as swipe
+      const target = currentX > 0 ? REVEAL_DISTANCE : -REVEAL_DISTANCE;
+      animate(x, target, { type: "spring", stiffness: 400, damping: 35 });
+      setRevealed(true);
+    } else {
+      // Snap closed
+      animate(x, 0, { type: "spring", stiffness: 400, damping: 35 });
+      setRevealed(false);
     }
-    setDraggingIdx(null);
-    setDragOverIdx(null);
-    touchStartY.current = null;
+    startX.current = null;
   };
 
-  // Favorites list (in order) and non-favorites (alphabetical)
+  const handleClose = () => {
+    animate(x, 0, { type: "spring", stiffness: 400, damping: 35 });
+    setRevealed(false);
+  };
+
+  return (
+    <Reorder.Item
+      value={item}
+      whileDrag={{
+        scale: 1.02,
+        boxShadow: `0 8px 24px ${t.text}22`,
+        zIndex: 100,
+      }}
+      transition={{ type: "spring", stiffness: 400, damping: 35 }}
+      style={{
+        position: "relative",
+        listStyle: "none",
+        background: t.bg,
+        borderBottom: isLast ? "none" : `1px solid ${t.border}`,
+      }}
+    >
+      {/* Background "Remove" buttons revealed by swipe */}
+      <div style={{ position: "absolute", inset: 0, display: "flex", justifyContent: "space-between", alignItems: "center", pointerEvents: "none" }}>
+        <div
+          onClick={onRemove}
+          style={{
+            background: "#E24B4A", color: "#fff",
+            padding: "0 18px",
+            height: "100%",
+            display: "flex", alignItems: "center", gap: 8,
+            fontSize: 13, fontWeight: 500,
+            pointerEvents: revealed ? "auto" : "none",
+            cursor: "pointer",
+            opacity: x.get() > 10 ? 1 : 0,
+          }}
+        >
+          <TrashIcon color="#fff" size={14} />
+          Remove
+        </div>
+        <div
+          onClick={onRemove}
+          style={{
+            background: "#E24B4A", color: "#fff",
+            padding: "0 18px",
+            height: "100%",
+            display: "flex", alignItems: "center", gap: 8,
+            fontSize: 13, fontWeight: 500,
+            pointerEvents: revealed ? "auto" : "none",
+            cursor: "pointer",
+            opacity: x.get() < -10 ? 1 : 0,
+          }}
+        >
+          Remove
+          <TrashIcon color="#fff" size={14} />
+        </div>
+      </div>
+
+      {/* Main row content — translates with swipe */}
+      <motion.div
+        style={{
+          x,
+          background: t.bg,
+          padding: "12px 16px",
+          display: "flex", alignItems: "center", gap: 12,
+          position: "relative",
+        }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onClick={() => { if (revealed) handleClose(); }}
+      >
+        <img src={item.imgSm} alt={item.name} style={{ width: 40, height: 40, borderRadius: 10, objectFit: "cover", flexShrink: 0 }} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ ...s.settingName, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.name}</div>
+          <div style={s.settingDesc}>{item.label} · {item.strength}</div>
+        </div>
+        {/* Drag handle on the right */}
+        <div
+          onPointerDown={(e) => e.stopPropagation()}
+          style={{
+            padding: "6px 4px",
+            cursor: "grab",
+            touchAction: "none",
+            display: "flex", alignItems: "center",
+            flexShrink: 0,
+            color: t.textMuted,
+          }}
+        >
+          <DragHandle color={t.textMuted} />
+        </div>
+      </motion.div>
+    </Reorder.Item>
+  );
+}
+
+export default function EditFavoritesScreen({ navigate, s, t, favorites, setFavorites }) {
   const favoriteItems = favorites
     .map(name => ALL_RECIPES.find(r => r.name === name))
     .filter(Boolean);
   const nonFavoriteItems = ALL_RECIPES.filter(r => !favorites.includes(r.name));
+
+  const handleReorder = (newOrder) => {
+    setFavorites(newOrder.map(item => item.name));
+  };
+
+  const handleRemove = (name) => {
+    setFavorites(prev => prev.filter(f => f !== name));
+  };
+
+  const handleAdd = (name) => {
+    setFavorites(prev => [...prev, name]);
+  };
 
   return (
     <div>
@@ -101,109 +173,77 @@ export default function EditFavoritesScreen({ navigate, s, t, favorites, setFavo
           <span style={s.backLabel} onClick={() => navigate("Home")}>Home</span>
         </div>
         <div style={s.pageTitle}>Edit Favorites</div>
-        <div style={s.pageSub}>Tap to add or remove. Drag the handle to reorder.</div>
+        <div style={s.pageSub}>Tap to add. Drag to reorder. Swipe to remove.</div>
       </div>
 
-      {/* Favorites section — draggable */}
+      {/* Favorites section — reorderable + swipe to remove */}
       {favoriteItems.length > 0 && (
         <div style={s.section}>
-          <div style={s.sectionTitle}>Your Favorites </div>
-          <div style={s.settingGroup}>
-            {favoriteItems.map((r, i) => {
-              const isLast = i === favoriteItems.length - 1;
-              const isDragging = draggingIdx === i;
-              const isDragOver = dragOverIdx === i && draggingIdx !== i;
-
-              return (
-                <div
-                  key={r.name}
-                  ref={el => (itemRefs.current[i] = el)}
-                  draggable
-                  onDragStart={() => handleDragStart(i)}
-                  onDragOver={(e) => handleDragOver(e, i)}
-                  onDrop={(e) => handleDrop(e, i)}
-                  onDragEnd={handleDragEnd}
-                  style={{
-                    ...s.settingRow(isLast),
-                    cursor: "pointer",
-                    background: isDragging ? t.bg3 : isDragOver ? `${t.accent}22` : "transparent",
-                    opacity: isDragging ? 0.5 : 1,
-                    borderTop: isDragOver && draggingIdx > i ? `2px solid ${t.accent}` : undefined,
-                    borderBottom: isDragOver && draggingIdx < i ? `2px solid ${t.accent}` : undefined,
-                    transition: "background 0.15s ease",
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1 }}>
-                    {/* Drag handle — only this triggers the drag */}
-                    <div
-                      onTouchStart={(e) => { e.stopPropagation(); handleTouchStart(e, i); }}
-                      onTouchMove={handleTouchMove}
-                      onTouchEnd={handleTouchEnd}
-                      style={{
-                        cursor: "grab",
-                        padding: "6px 4px",
-                        marginLeft: -4,
-                        display: "flex",
-                        alignItems: "center",
-                        touchAction: "none",
-                      }}
-                    >
-                      <DragHandle color={t.textMuted} />
-                    </div>
-                    <img src={r.imgSm} alt={r.name} style={{ width: 40, height: 40, borderRadius: 10, objectFit: "cover" }} />
-                    <div style={{ cursor: "pointer", flex: 1 }} onClick={() => toggle(r.name)}>
-                      <div style={s.settingName}>{r.name}</div>
-                      <div style={s.settingDesc}>{r.label} · {r.strength}</div>
-                    </div>
-                  </div>
-                  <div
-                    onClick={() => toggle(r.name)}
-                    style={{
-                      width: 24, height: 24, borderRadius: "50%",
-                      border: `2px solid ${t.accent}`,
-                      background: t.accent,
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: 12, color: "#111009", flexShrink: 0, cursor: "pointer",
-                    }}
-                  >
-                    ✓
-                  </div>
-                </div>
-              );
-            })}
+          <div style={s.sectionTitle}>Your Favorites</div>
+          <div style={{
+            background: t.bg2,
+            border: `1px solid ${t.border}`,
+            borderRadius: 14,
+            overflow: "hidden",
+          }}>
+            <Reorder.Group
+              axis="y"
+              values={favoriteItems}
+              onReorder={handleReorder}
+              style={{ listStyle: "none", padding: 0, margin: 0 }}
+            >
+              <AnimatePresence>
+                {favoriteItems.map((r, i) => (
+                  <FavoriteItem
+                    key={r.name}
+                    item={r}
+                    onRemove={() => handleRemove(r.name)}
+                    t={t}
+                    s={s}
+                    isLast={i === favoriteItems.length - 1}
+                  />
+                ))}
+              </AnimatePresence>
+            </Reorder.Group>
           </div>
         </div>
       )}
 
-      {/* Non-favorites section — tap to add */}
-      <div style={{ ...s.section, marginTop: favoriteItems.length > 0 ? 24 : 0 }}>
-        <div style={s.sectionTitle}>{favoriteItems.length > 0 ? "More Drinks" : "All Drinks"}</div>
-        <div style={s.settingGroup}>
-          {nonFavoriteItems.map((r, i) => (
-            <div
-              key={r.name}
-              style={{ ...s.settingRow(i === nonFavoriteItems.length - 1), cursor: "pointer" }}
-              onClick={() => toggle(r.name)}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <img src={r.imgSm} alt={r.name} style={{ width: 40, height: 40, borderRadius: 10, objectFit: "cover" }} />
-                <div>
-                  <div style={s.settingName}>{r.name}</div>
-                  <div style={s.settingDesc}>{r.label} · {r.strength}</div>
+      {/* Non-favorites — tap to add */}
+      {nonFavoriteItems.length > 0 && (
+        <div style={{ ...s.section, marginTop: favoriteItems.length > 0 ? 24 : 0 }}>
+          <div style={s.sectionTitle}>{favoriteItems.length > 0 ? "More Drinks" : "All Drinks"}</div>
+          <div style={s.settingGroup}>
+            {nonFavoriteItems.map((r, i) => (
+              <motion.div
+                key={r.name}
+                layout
+                transition={{ type: "spring", stiffness: 400, damping: 35 }}
+                style={{ ...s.settingRow(i === nonFavoriteItems.length - 1), cursor: "pointer" }}
+                onClick={() => handleAdd(r.name)}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <img src={r.imgSm} alt={r.name} style={{ width: 40, height: 40, borderRadius: 10, objectFit: "cover" }} />
+                  <div>
+                    <div style={s.settingName}>{r.name}</div>
+                    <div style={s.settingDesc}>{r.label} · {r.strength}</div>
+                  </div>
                 </div>
-              </div>
-              <div style={{
-                width: 24, height: 24, borderRadius: "50%",
-                border: `2px solid ${t.border}`,
-                background: "transparent",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 12, color: "#111009", flexShrink: 0,
-              }}>
-              </div>
-            </div>
-          ))}
+                <div style={{
+                  width: 24, height: 24, borderRadius: "50%",
+                  border: `2px solid ${t.border}`,
+                  background: "transparent",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  flexShrink: 0,
+                  fontSize: 16, color: t.textMuted,
+                }}>
+                  +
+                </div>
+              </motion.div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       <NavBar current="Home" navigate={navigate} s={s} t={t} />
     </div>
