@@ -107,7 +107,7 @@ export default function EditFavoritesScreen({ navigate, s, t, favorites, setFavo
       {/* Favorites section — draggable */}
       {favoriteItems.length > 0 && (
         <div style={s.section}>
-          <div style={s.sectionTitle}>Your Favorites · in order</div>
+          <div style={s.sectionTitle}>Your Favorites </div>
           <div style={s.settingGroup}>
             {favoriteItems.map((r, i) => {
               const isLast = i === favoriteItems.length - 1;
