@@ -2,7 +2,6 @@ import { useState, useRef } from "react";
 import { motion, Reorder, AnimatePresence, useMotionValue, animate } from "framer-motion";
 import NavBar from "../components/NavBar";
 import { RECIPES, RECIPE_GROUPS } from "../data/recipes";
-import { TrashIcon } from "../components/Icons";
 
 const ALL_RECIPES = [
   ...RECIPE_GROUPS.map(g => ({ name: g.name, label: g.label, strength: g.strength, imgSm: g.imgSm, type: "group" })),
@@ -21,7 +20,7 @@ function FavoriteItem({ item, onRemove, t, s, isLast }) {
   const x = useMotionValue(0);
   const [revealed, setRevealed] = useState(false);
   const startX = useRef(null);
-  const REVEAL_DISTANCE = 80;
+  const REVEAL_DISTANCE = 110;
 
   const handleTouchStart = (e) => {
     startX.current = e.touches[0].clientX;
@@ -79,33 +78,33 @@ function FavoriteItem({ item, onRemove, t, s, isLast }) {
           onClick={onRemove}
           style={{
             background: "#E24B4A", color: "#fff",
-            padding: "0 18px",
+            padding: "0 22px",
             height: "100%",
-            display: "flex", alignItems: "center", gap: 8,
+            display: "flex", alignItems: "center", justifyContent: "center",
             fontSize: 13, fontWeight: 500,
             pointerEvents: revealed ? "auto" : "none",
             cursor: "pointer",
             opacity: x.get() > 10 ? 1 : 0,
+            minWidth: 100,
           }}
         >
-          <TrashIcon color="#fff" size={14} />
           Remove
         </div>
         <div
           onClick={onRemove}
           style={{
             background: "#E24B4A", color: "#fff",
-            padding: "0 18px",
+            padding: "0 22px",
             height: "100%",
-            display: "flex", alignItems: "center", gap: 8,
+            display: "flex", alignItems: "center", justifyContent: "center",
             fontSize: 13, fontWeight: 500,
             pointerEvents: revealed ? "auto" : "none",
             cursor: "pointer",
             opacity: x.get() < -10 ? 1 : 0,
+            minWidth: 100,
           }}
         >
           Remove
-          <TrashIcon color="#fff" size={14} />
         </div>
       </div>
 
