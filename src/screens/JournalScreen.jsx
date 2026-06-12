@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
+import { motion, useMotionValue, animate, AnimatePresence } from "framer-motion";
 import NavBar from "../components/NavBar";
 import { useJournal } from "../context/JournalContext";
 import { PlusIcon } from "../components/Icons";
@@ -31,9 +32,109 @@ function calculateRatio(dose, yieldVal) {
   return `1:${ratio}`;
 }
 
-function DrinkCard({ drink, onClick, t, s }) {
+// ─── Swipeable wrapper for journal cards ─────────────────────────────
+function SwipeableCard({ onClick, onRemove, t, s, children }) {
+  const x = useMotionValue(0);
+  const [revealed, setRevealed] = useState(false);
+  const startX = useRef(null);
+  const dragged = useRef(false);
+  const REVEAL_DISTANCE = 110;
+
+  const handleTouchStart = (e) => {
+    startX.current = e.touches[0].clientX;
+    dragged.current = false;
+  };
+
+  const handleTouchMove = (e) => {
+    if (startX.current === null) return;
+    const dx = e.touches[0].clientX - startX.current;
+    if (Math.abs(dx) > 8) {
+      dragged.current = true;
+      x.set(dx > 0 ? Math.min(dx, REVEAL_DISTANCE * 1.5) : Math.max(dx, -REVEAL_DISTANCE * 1.5));
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (startX.current === null) return;
+    const currentX = x.get();
+    if (Math.abs(currentX) > REVEAL_DISTANCE * 0.6) {
+      const target = currentX > 0 ? REVEAL_DISTANCE : -REVEAL_DISTANCE;
+      animate(x, target, { type: "spring", stiffness: 400, damping: 35 });
+      setRevealed(true);
+    } else {
+      animate(x, 0, { type: "spring", stiffness: 400, damping: 35 });
+      setRevealed(false);
+    }
+    startX.current = null;
+  };
+
+  const handleClose = () => {
+    animate(x, 0, { type: "spring", stiffness: 400, damping: 35 });
+    setRevealed(false);
+  };
+
+  const handleClick = () => {
+    if (revealed) {
+      handleClose();
+      return;
+    }
+    if (dragged.current) return;
+    onClick();
+  };
+
   return (
-    <div style={{ ...s.entryCard, cursor: "pointer" }} onClick={onClick}>
+    <div style={{ position: "relative", marginBottom: 10, borderRadius: 14, overflow: "hidden" }}>
+      {/* Background Remove buttons */}
+      <div style={{ position: "absolute", inset: 0, display: "flex", justifyContent: "space-between", alignItems: "stretch", pointerEvents: "none" }}>
+        <div
+          onClick={onRemove}
+          style={{
+            background: "#E24B4A", color: "#fff",
+            padding: "0 22px",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 13, fontWeight: 500,
+            pointerEvents: revealed ? "auto" : "none",
+            cursor: "pointer",
+            opacity: x.get() > 10 ? 1 : 0,
+            minWidth: 100,
+          }}
+        >
+          Remove
+        </div>
+        <div
+          onClick={onRemove}
+          style={{
+            background: "#E24B4A", color: "#fff",
+            padding: "0 22px",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 13, fontWeight: 500,
+            pointerEvents: revealed ? "auto" : "none",
+            cursor: "pointer",
+            opacity: x.get() < -10 ? 1 : 0,
+            minWidth: 100,
+          }}
+        >
+          Remove
+        </div>
+      </div>
+
+      {/* Card content */}
+      <motion.div
+        style={{ x, background: t.bg2, border: `1px solid ${t.border}`, borderRadius: 14, padding: 14, cursor: "pointer", position: "relative" }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onClick={handleClick}
+      >
+        {children}
+      </motion.div>
+    </div>
+  );
+}
+
+function DrinkCard({ drink, onClick, onRemove, t, s }) {
+  return (
+    <SwipeableCard onClick={onClick} onRemove={onRemove} t={t} s={s}>
       <div style={s.entryHead}>
         <div>
           <div style={s.entryName}>{drink.name}</div>
@@ -55,18 +156,18 @@ function DrinkCard({ drink, onClick, t, s }) {
       {drink.notes && (
         <div style={s.entryNotes}>"{drink.notes}"</div>
       )}
-    </div>
+    </SwipeableCard>
   );
 }
 
-function EspressoCard({ entry, grinders, onClick, t, s }) {
+function EspressoCard({ entry, grinders, onClick, onRemove, t, s }) {
   const grinder = grinders.find(g => g.id === entry.grinder_id);
   const roastIdx = ROAST_LEVELS.indexOf(entry.roast_level);
   const ratio = calculateRatio(entry.dose, entry.yield);
   const roastDate = formatRoastDate(entry.roast_date);
 
   return (
-    <div style={{ ...s.entryCard, cursor: "pointer" }} onClick={onClick}>
+    <SwipeableCard onClick={onClick} onRemove={onRemove} t={t} s={s}>
       <div style={s.entryHead}>
         <div>
           <div style={s.entryName}>{entry.bean_name}</div>
@@ -125,17 +226,24 @@ function EspressoCard({ entry, grinders, onClick, t, s }) {
       {entry.notes && (
         <div style={s.entryNotes}>"{entry.notes}"</div>
       )}
-    </div>
+    </SwipeableCard>
   );
 }
 
 export default function JournalScreen({ navigate, s, t }) {
   const [tab, setTab] = useState("drinks");
   const [showPicker, setShowPicker] = useState(false);
-  const { drinks, espresso, grinders } = useJournal();
+  const [confirmDelete, setConfirmDelete] = useState(null);
+  const { drinks, espresso, grinders, deleteDrink, deleteEspresso } = useJournal();
+
+  const handleConfirmDelete = async () => {
+    if (!confirmDelete) return;
+    if (confirmDelete.type === "drink") await deleteDrink(confirmDelete.id);
+    else await deleteEspresso(confirmDelete.id);
+    setConfirmDelete(null);
+  };
 
   const journalStyles = {
-    entryCard: { background: t.bg2, border: `1px solid ${t.border}`, borderRadius: 14, padding: 14, marginBottom: 10 },
     entryHead: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 },
     entryName: { fontFamily: "'Libre Baskerville', serif", fontSize: 16, fontStyle: "italic", color: t.text, marginBottom: 3 },
     entryDate: { fontSize: 9, color: t.accent, letterSpacing: 1, textTransform: "uppercase" },
@@ -210,19 +318,26 @@ export default function JournalScreen({ navigate, s, t }) {
               No entries yet. Tap the + button to log your first brew.
             </div>
           ) : (
-            list.map(item =>
-              tab === "drinks"
-                ? <DrinkCard key={item.id} drink={item} t={t} s={journalStyles}
-                    onClick={() => navigate("DrinkEntryDetail", item)}
-                  />
-                : <EspressoCard key={item.id} entry={item} grinders={grinders} t={t} s={journalStyles}
-                    onClick={() => navigate("EspressoEntryDetail", item)}
-                  />
-            )
+            <AnimatePresence>
+              {list.map(item =>
+                tab === "drinks"
+                  ? <DrinkCard
+                      key={item.id} drink={item} t={t} s={journalStyles}
+                      onClick={() => navigate("DrinkEntryDetail", item)}
+                      onRemove={() => setConfirmDelete({ type: "drink", id: item.id, name: item.name })}
+                    />
+                  : <EspressoCard
+                      key={item.id} entry={item} grinders={grinders} t={t} s={journalStyles}
+                      onClick={() => navigate("EspressoEntryDetail", item)}
+                      onRemove={() => setConfirmDelete({ type: "espresso", id: item.id, name: item.bean_name })}
+                    />
+              )}
+            </AnimatePresence>
           )}
         </div>
       </div>
 
+      {/* New entry picker */}
       {showPicker && (
         <>
           <div onClick={() => setShowPicker(false)} style={{ position: "fixed", inset: 0, background: "rgba(28,26,19,0.55)", zIndex: 200 }} />
@@ -269,6 +384,34 @@ export default function JournalScreen({ navigate, s, t }) {
             >
               Cancel
             </button>
+          </div>
+        </>
+      )}
+
+      {/* Delete confirmation */}
+      {confirmDelete && (
+        <>
+          <div onClick={() => setConfirmDelete(null)} style={{ position: "fixed", inset: 0, background: "rgba(28,26,19,0.55)", zIndex: 200 }} />
+          <div style={{
+            position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)",
+            width: "calc(100% - 40px)", maxWidth: 320,
+            background: t.bg, border: `1px solid ${t.border}`, borderRadius: 16,
+            padding: 22, zIndex: 201,
+          }}>
+            <div style={{ fontFamily: "'Libre Baskerville', serif", fontSize: 18, fontStyle: "italic", color: t.text, marginBottom: 8 }}>
+              Delete entry?
+            </div>
+            <div style={{ fontSize: 13, color: t.textMuted, fontWeight: 300, marginBottom: 18, lineHeight: 1.5 }}>
+              "{confirmDelete.name}" will be permanently removed.
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={() => setConfirmDelete(null)} style={{ flex: 1, padding: 12, background: "transparent", border: `1px solid ${t.border}`, borderRadius: 10, fontFamily: "'Outfit', sans-serif", fontSize: 13, color: t.text, cursor: "pointer" }}>
+                Cancel
+              </button>
+              <button onClick={handleConfirmDelete} style={{ flex: 1, padding: 12, background: "#E24B4A", border: "none", borderRadius: 10, fontFamily: "'Outfit', sans-serif", fontSize: 13, color: "#fff", fontWeight: 500, cursor: "pointer" }}>
+                Delete
+              </button>
+            </div>
           </div>
         </>
       )}
