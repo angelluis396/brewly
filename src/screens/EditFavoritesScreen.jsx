@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { motion, Reorder, AnimatePresence, useMotionValue, animate } from "framer-motion";
+import { motion, Reorder, AnimatePresence, useMotionValue, useTransform, animate } from "framer-motion";
 import NavBar from "../components/NavBar";
 import { RECIPES, RECIPE_GROUPS } from "../data/recipes";
 
@@ -15,44 +15,39 @@ const DragHandle = ({ color }) => (
   </svg>
 );
 
-// ─── Individual draggable favorite item with swipe-to-remove ──────────
+const REVEAL_DISTANCE = 110;
+
 function FavoriteItem({ item, onRemove, t, s, isLast }) {
   const x = useMotionValue(0);
-  const [revealed, setRevealed] = useState(false);
+  // Reactive opacity for the Remove button — fades in as user swipes
+  const removeOpacity = useTransform(x, [-10, -50], [0, 1]);
+
   const startX = useRef(null);
-  const REVEAL_DISTANCE = 110;
+  const startOffset = useRef(0); // x position at touch start
 
   const handleTouchStart = (e) => {
     startX.current = e.touches[0].clientX;
+    startOffset.current = x.get();
   };
 
   const handleTouchMove = (e) => {
     if (startX.current === null) return;
     const dx = e.touches[0].clientX - startX.current;
-    // Only allow LEFT swipe (negative dx) to reveal Remove on the right
-    if (dx < -8) {
-      x.set(Math.max(dx, -REVEAL_DISTANCE * 1.5));
-    }
+    const newX = startOffset.current + dx;
+    // Clamp: never positive (can't drag past closed), never past max reveal
+    x.set(Math.max(-REVEAL_DISTANCE * 1.5, Math.min(0, newX)));
   };
 
   const handleTouchEnd = () => {
     if (startX.current === null) return;
     const currentX = x.get();
-    if (currentX < -REVEAL_DISTANCE * 0.6) {
-      // Snap to revealed state (left-swipe reveals Remove on the right)
+    // If past 50% threshold, snap open. Otherwise snap closed.
+    if (currentX < -REVEAL_DISTANCE / 2) {
       animate(x, -REVEAL_DISTANCE, { type: "spring", stiffness: 400, damping: 35 });
-      setRevealed(true);
     } else {
-      // Snap closed
       animate(x, 0, { type: "spring", stiffness: 400, damping: 35 });
-      setRevealed(false);
     }
     startX.current = null;
-  };
-
-  const handleClose = () => {
-    animate(x, 0, { type: "spring", stiffness: 400, damping: 35 });
-    setRevealed(false);
   };
 
   return (
@@ -71,25 +66,23 @@ function FavoriteItem({ item, onRemove, t, s, isLast }) {
         borderBottom: isLast ? "none" : `1px solid ${t.border}`,
       }}
     >
-      {/* Background "Remove" buttons revealed by swipe */}
-      <div style={{ position: "absolute", inset: 0, display: "flex", justifyContent: "flex-end", alignItems: "stretch", pointerEvents: "none" }}>
-        <div
-          onClick={onRemove}
-          style={{
-            background: "#E24B4A", color: "#fff",
-            padding: "0 22px",
-            height: "100%",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 13, fontWeight: 500,
-            pointerEvents: revealed ? "auto" : "none",
-            cursor: "pointer",
-            opacity: x.get() < -10 ? 1 : 0,
-            minWidth: 100,
-          }}
-        >
-          Remove
-        </div>
-      </div>
+      {/* Background "Remove" button — only on the right */}
+      <motion.div
+        onClick={onRemove}
+        style={{
+          position: "absolute",
+          top: 0, right: 0, bottom: 0,
+          background: "#E24B4A", color: "#fff",
+          padding: "0 22px",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: 13, fontWeight: 500,
+          cursor: "pointer",
+          opacity: removeOpacity,
+          minWidth: 100,
+        }}
+      >
+        Remove
+      </motion.div>
 
       {/* Main row content — translates with swipe */}
       <motion.div
@@ -103,14 +96,12 @@ function FavoriteItem({ item, onRemove, t, s, isLast }) {
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        onClick={() => { if (revealed) handleClose(); }}
       >
         <img src={item.imgSm} alt={item.name} style={{ width: 40, height: 40, borderRadius: 10, objectFit: "cover", flexShrink: 0 }} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ ...s.settingName, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.name}</div>
           <div style={s.settingDesc}>{item.label} · {item.strength}</div>
         </div>
-        {/* Drag handle on the right */}
         <div
           onPointerDown={(e) => e.stopPropagation()}
           style={{
@@ -158,7 +149,6 @@ export default function EditFavoritesScreen({ navigate, s, t, favorites, setFavo
         <div style={s.pageSub}>Tap to add. Drag to reorder. Swipe to remove.</div>
       </div>
 
-      {/* Favorites section — reorderable + swipe to remove */}
       {favoriteItems.length > 0 && (
         <div style={s.section}>
           <div style={s.sectionTitle}>Your Favorites</div>
@@ -191,7 +181,6 @@ export default function EditFavoritesScreen({ navigate, s, t, favorites, setFavo
         </div>
       )}
 
-      {/* Non-favorites — tap to add */}
       {nonFavoriteItems.length > 0 && (
         <div style={{ ...s.section, marginTop: favoriteItems.length > 0 ? 24 : 0 }}>
           <div style={s.sectionTitle}>{favoriteItems.length > 0 ? "More Drinks" : "All Drinks"}</div>

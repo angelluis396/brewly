@@ -1,10 +1,11 @@
 import { useState, useRef } from "react";
-import { motion, useMotionValue, animate, AnimatePresence } from "framer-motion";
+import { motion, useMotionValue, useTransform, animate, AnimatePresence } from "framer-motion";
 import NavBar from "../components/NavBar";
 import { useJournal } from "../context/JournalContext";
 import { PlusIcon } from "../components/Icons";
 
 const ROAST_LEVELS = ["Light", "Lt-Med", "Medium", "Md-Dk", "Dark"];
+const REVEAL_DISTANCE = 110;
 
 function formatDate(dateString) {
   const d = new Date(dateString);
@@ -32,83 +33,76 @@ function calculateRatio(dose, yieldVal) {
   return `1:${ratio}`;
 }
 
-// ─── Swipeable wrapper for journal cards ─────────────────────────────
-function SwipeableCard({ onClick, onRemove, t, s, children }) {
+// Swipeable wrapper — swipe LEFT to reveal Remove, swipe right to close
+function SwipeableCard({ onClick, onRemove, t, children }) {
   const x = useMotionValue(0);
-  const [revealed, setRevealed] = useState(false);
+  const removeOpacity = useTransform(x, [-10, -50], [0, 1]);
   const startX = useRef(null);
+  const startOffset = useRef(0);
   const dragged = useRef(false);
-  const REVEAL_DISTANCE = 110;
 
   const handleTouchStart = (e) => {
     startX.current = e.touches[0].clientX;
+    startOffset.current = x.get();
     dragged.current = false;
   };
 
   const handleTouchMove = (e) => {
     if (startX.current === null) return;
     const dx = e.touches[0].clientX - startX.current;
-    if (dx < -8) {
-      dragged.current = true;
-      x.set(Math.max(dx, -REVEAL_DISTANCE * 1.5));
-    }
+    if (Math.abs(dx) > 8) dragged.current = true;
+    const newX = startOffset.current + dx;
+    // Clamp: never positive, never past max reveal
+    x.set(Math.max(-REVEAL_DISTANCE * 1.5, Math.min(0, newX)));
   };
 
   const handleTouchEnd = () => {
     if (startX.current === null) return;
     const currentX = x.get();
-    if (currentX < -REVEAL_DISTANCE * 0.6) {
+    if (currentX < -REVEAL_DISTANCE / 2) {
       animate(x, -REVEAL_DISTANCE, { type: "spring", stiffness: 400, damping: 35 });
-      setRevealed(true);
     } else {
       animate(x, 0, { type: "spring", stiffness: 400, damping: 35 });
-      setRevealed(false);
     }
     startX.current = null;
   };
 
-  const handleClose = () => {
-    animate(x, 0, { type: "spring", stiffness: 400, damping: 35 });
-    setRevealed(false);
-  };
-
-  const handleClick = () => {
-    if (revealed) {
-      handleClose();
+  const handleCardClick = () => {
+    if (dragged.current) return;
+    const currentX = x.get();
+    // If revealed, tapping the card just closes it
+    if (currentX < -10) {
+      animate(x, 0, { type: "spring", stiffness: 400, damping: 35 });
       return;
     }
-    if (dragged.current) return;
     onClick();
   };
 
   return (
     <div style={{ position: "relative", marginBottom: 10, borderRadius: 14, overflow: "hidden" }}>
-      {/* Background Remove buttons */}
-      <div style={{ position: "absolute", inset: 0, display: "flex", justifyContent: "space-between", alignItems: "stretch", pointerEvents: "none" }}>
-        <div
-          onClick={onRemove}
-          style={{
-            background: "#E24B4A", color: "#fff",
-            padding: "0 22px",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 13, fontWeight: 500,
-            pointerEvents: revealed ? "auto" : "none",
-            cursor: "pointer",
-            opacity: x.get() < -10 ? 1 : 0,
-            minWidth: 100,
-          }}
-        >
-          Remove
-        </div>
-      </div>
+      <motion.div
+        onClick={onRemove}
+        style={{
+          position: "absolute",
+          top: 0, right: 0, bottom: 0,
+          background: "#E24B4A", color: "#fff",
+          padding: "0 22px",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: 13, fontWeight: 500,
+          cursor: "pointer",
+          opacity: removeOpacity,
+          minWidth: 100,
+        }}
+      >
+        Remove
+      </motion.div>
 
-      {/* Card content */}
       <motion.div
         style={{ x, background: t.bg2, border: `1px solid ${t.border}`, borderRadius: 14, padding: 14, cursor: "pointer", position: "relative" }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        onClick={handleClick}
+        onClick={handleCardClick}
       >
         {children}
       </motion.div>
@@ -118,7 +112,7 @@ function SwipeableCard({ onClick, onRemove, t, s, children }) {
 
 function DrinkCard({ drink, onClick, onRemove, t, s }) {
   return (
-    <SwipeableCard onClick={onClick} onRemove={onRemove} t={t} s={s}>
+    <SwipeableCard onClick={onClick} onRemove={onRemove} t={t}>
       <div style={s.entryHead}>
         <div>
           <div style={s.entryName}>{drink.name}</div>
@@ -151,7 +145,7 @@ function EspressoCard({ entry, grinders, onClick, onRemove, t, s }) {
   const roastDate = formatRoastDate(entry.roast_date);
 
   return (
-    <SwipeableCard onClick={onClick} onRemove={onRemove} t={t} s={s}>
+    <SwipeableCard onClick={onClick} onRemove={onRemove} t={t}>
       <div style={s.entryHead}>
         <div>
           <div style={s.entryName}>{entry.bean_name}</div>
@@ -321,7 +315,6 @@ export default function JournalScreen({ navigate, s, t }) {
         </div>
       </div>
 
-      {/* New entry picker */}
       {showPicker && (
         <>
           <div onClick={() => setShowPicker(false)} style={{ position: "fixed", inset: 0, background: "rgba(28,26,19,0.55)", zIndex: 200 }} />
@@ -372,7 +365,6 @@ export default function JournalScreen({ navigate, s, t }) {
         </>
       )}
 
-      {/* Delete confirmation */}
       {confirmDelete && (
         <>
           <div onClick={() => setConfirmDelete(null)} style={{ position: "fixed", inset: 0, background: "rgba(28,26,19,0.55)", zIndex: 200 }} />
