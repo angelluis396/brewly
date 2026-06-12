@@ -29,19 +29,18 @@ function FavoriteItem({ item, onRemove, t, s, isLast }) {
   const handleTouchMove = (e) => {
     if (startX.current === null) return;
     const dx = e.touches[0].clientX - startX.current;
-    // Allow swipe in either direction, follow finger
-    if (Math.abs(dx) > 8) {
-      x.set(dx > 0 ? Math.min(dx, REVEAL_DISTANCE * 1.5) : Math.max(dx, -REVEAL_DISTANCE * 1.5));
+    // Only allow LEFT swipe (negative dx) to reveal Remove on the right
+    if (dx < -8) {
+      x.set(Math.max(dx, -REVEAL_DISTANCE * 1.5));
     }
   };
 
   const handleTouchEnd = () => {
     if (startX.current === null) return;
     const currentX = x.get();
-    if (Math.abs(currentX) > REVEAL_DISTANCE * 0.6) {
-      // Snap to revealed state — same direction as swipe
-      const target = currentX > 0 ? REVEAL_DISTANCE : -REVEAL_DISTANCE;
-      animate(x, target, { type: "spring", stiffness: 400, damping: 35 });
+    if (currentX < -REVEAL_DISTANCE * 0.6) {
+      // Snap to revealed state (left-swipe reveals Remove on the right)
+      animate(x, -REVEAL_DISTANCE, { type: "spring", stiffness: 400, damping: 35 });
       setRevealed(true);
     } else {
       // Snap closed
@@ -73,23 +72,7 @@ function FavoriteItem({ item, onRemove, t, s, isLast }) {
       }}
     >
       {/* Background "Remove" buttons revealed by swipe */}
-      <div style={{ position: "absolute", inset: 0, display: "flex", justifyContent: "space-between", alignItems: "center", pointerEvents: "none" }}>
-        <div
-          onClick={onRemove}
-          style={{
-            background: "#E24B4A", color: "#fff",
-            padding: "0 22px",
-            height: "100%",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 13, fontWeight: 500,
-            pointerEvents: revealed ? "auto" : "none",
-            cursor: "pointer",
-            opacity: x.get() > 10 ? 1 : 0,
-            minWidth: 100,
-          }}
-        >
-          Remove
-        </div>
+      <div style={{ position: "absolute", inset: 0, display: "flex", justifyContent: "flex-end", alignItems: "stretch", pointerEvents: "none" }}>
         <div
           onClick={onRemove}
           style={{

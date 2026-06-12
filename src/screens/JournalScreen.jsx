@@ -48,18 +48,17 @@ function SwipeableCard({ onClick, onRemove, t, s, children }) {
   const handleTouchMove = (e) => {
     if (startX.current === null) return;
     const dx = e.touches[0].clientX - startX.current;
-    if (Math.abs(dx) > 8) {
+    if (dx < -8) {
       dragged.current = true;
-      x.set(dx > 0 ? Math.min(dx, REVEAL_DISTANCE * 1.5) : Math.max(dx, -REVEAL_DISTANCE * 1.5));
+      x.set(Math.max(dx, -REVEAL_DISTANCE * 1.5));
     }
   };
 
   const handleTouchEnd = () => {
     if (startX.current === null) return;
     const currentX = x.get();
-    if (Math.abs(currentX) > REVEAL_DISTANCE * 0.6) {
-      const target = currentX > 0 ? REVEAL_DISTANCE : -REVEAL_DISTANCE;
-      animate(x, target, { type: "spring", stiffness: 400, damping: 35 });
+    if (currentX < -REVEAL_DISTANCE * 0.6) {
+      animate(x, -REVEAL_DISTANCE, { type: "spring", stiffness: 400, damping: 35 });
       setRevealed(true);
     } else {
       animate(x, 0, { type: "spring", stiffness: 400, damping: 35 });
@@ -86,21 +85,6 @@ function SwipeableCard({ onClick, onRemove, t, s, children }) {
     <div style={{ position: "relative", marginBottom: 10, borderRadius: 14, overflow: "hidden" }}>
       {/* Background Remove buttons */}
       <div style={{ position: "absolute", inset: 0, display: "flex", justifyContent: "space-between", alignItems: "stretch", pointerEvents: "none" }}>
-        <div
-          onClick={onRemove}
-          style={{
-            background: "#E24B4A", color: "#fff",
-            padding: "0 22px",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 13, fontWeight: 500,
-            pointerEvents: revealed ? "auto" : "none",
-            cursor: "pointer",
-            opacity: x.get() > 10 ? 1 : 0,
-            minWidth: 100,
-          }}
-        >
-          Remove
-        </div>
         <div
           onClick={onRemove}
           style={{
