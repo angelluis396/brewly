@@ -1,5 +1,6 @@
 import { useState } from "react";
 import InfoIcon from "../components/InfoIcon";
+import NumberedTextarea from "../components/NumberedTextarea";
 import { useJournal } from "../context/JournalContext";
 
 const COFFEE_OPTIONS = [
@@ -239,9 +240,9 @@ export default function DrinkEntryForm({ navigate, s, t, units, item }) {
         <div style={styles.field}>
           <div style={styles.labelRow}>
             <span style={styles.label}>Method / Prep Steps<span style={styles.req}> *</span></span>
-            <InfoIcon t={t} message="How did you make it? Step by step or freeform notes." />
+            <InfoIcon t={t} message="Step by step or freeform. Start with '1.', '*', or '-' to control your own list." />
           </div>
-          <textarea style={styles.textarea} value={method} onChange={e => setMethod(e.target.value)} />
+          <NumberedTextarea value={method} onChange={setMethod} t={t} />
         </div>
 
         <div style={styles.field}>

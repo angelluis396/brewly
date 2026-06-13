@@ -14,7 +14,11 @@ export default function CustomDrinkCard({ drink, onClick, t, variant = "card" })
   const metaParts = [];
   if (drink.coffee_used) metaParts.push(drink.coffee_used);
   if (drink.milk_type) {
-    metaParts.push(`${drink.milk_amount}${drink.milk_unit} ${drink.milk_type}`);
+    if (drink.milk_amount) {
+      metaParts.push(`${drink.milk_amount}${drink.milk_unit} ${drink.milk_type}`);
+    } else {
+      metaParts.push(drink.milk_type);
+    }
   }
   const metaLine = metaParts.join(" · ");
 

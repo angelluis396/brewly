@@ -123,7 +123,7 @@ function DrinkCard({ drink, onClick, onRemove, t, s }) {
         <div style={s.metaItem}>
           <span style={s.metaLabel}>Milk</span>
           <span style={drink.milk_type ? s.metaVal : s.metaValNone}>
-            {drink.milk_type ? `${drink.milk_amount}${drink.milk_unit} ${drink.milk_type}` : "None"}
+            {drink.milk_type ? (drink.milk_amount ? `${drink.milk_amount}${drink.milk_unit} ${drink.milk_type}` : drink.milk_type) : "None"}
           </span>
         </div>
         <div style={s.metaItem}>

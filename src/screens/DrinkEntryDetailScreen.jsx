@@ -78,7 +78,7 @@ export default function DrinkEntryDetailScreen({ item, navigate, s, t }) {
             color: item.milk_type ? t.text : t.textDim,
             fontStyle: item.milk_type ? "normal" : "italic",
           }}>
-            {item.milk_type ? `${item.milk_amount}${item.milk_unit} ${item.milk_type}` : "None"}
+            {item.milk_type ? (item.milk_amount ? `${item.milk_amount}${item.milk_unit} ${item.milk_type}` : item.milk_type) : "None"}
           </div>
         </div>
 
