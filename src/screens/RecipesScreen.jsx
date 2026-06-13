@@ -1,16 +1,13 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import NavBar from "../components/NavBar";
-import { RECIPES, RECIPE_GROUPS, STRENGTH_ORDER } from "../data/recipes";
+import { RECIPES, RECIPE_GROUPS } from "../data/recipes";
 import { useJournal } from "../context/JournalContext";
 import CustomDrinkCard from "../components/CustomDrinkCard";
 import EmptyMyDrinks from "../components/EmptyMyDrinks";
 import { ChevronDownIcon } from "../components/Icons";
 
-const FILTERS = ["All", "Mild", "Bold", "Extra Bold"];
-
 export default function RecipesScreen({ navigate, s, t }) {
-  const [filter, setFilter] = useState("All");
   const [espressoOpen, setEspressoOpen] = useState(true);
   const [myDrinksOpen, setMyDrinksOpen] = useState(true);
   const { drinks } = useJournal();
@@ -20,9 +17,7 @@ export default function RecipesScreen({ navigate, s, t }) {
     ...RECIPES.map(r => ({ ...r, isGroup: false })),
   ].sort((a, b) => a.name.localeCompare(b.name));
 
-  const filtered = filter === "All"
-    ? allItems
-    : allItems.filter(item => item.strength === filter);
+  const filtered = allItems;
 
   const handleCardClick = (item) => {
     if (item.isGroup) navigate("VariantDetail", item);
@@ -55,19 +50,6 @@ export default function RecipesScreen({ navigate, s, t }) {
         <div style={s.pageSub}>{allItems.length} drinks · find your perfect cup</div>
       </div>
 
-      <div style={s.filterRow}>
-        {FILTERS.map(f => (
-          <div key={f} style={s.filterChip(filter === f)} onClick={() => setFilter(f)}>
-            {f !== "All" && (
-              <span style={{ marginRight: 6 }}>
-                {"●".repeat(STRENGTH_ORDER[f])}{"○".repeat(3 - STRENGTH_ORDER[f])}
-              </span>
-            )}
-            {f}
-          </div>
-        ))}
-      </div>
-
       <div style={{ padding: "0 26px" }}>
         {/* ─── Espresso Drinks section ───────────────────────────── */}
         <div
@@ -95,22 +77,42 @@ export default function RecipesScreen({ navigate, s, t }) {
               transition={{ type: "spring", stiffness: 400, damping: 35 }}
               style={{ overflow: "hidden" }}
             >
-              <div style={{ display: "flex", flexDirection: "column", gap: 12, paddingTop: 4, paddingBottom: 16 }}>
+              <div style={{
+                display: "flex", gap: 10,
+                overflowX: "auto",
+                padding: "12px 2px 4px",
+                margin: "0 -4px",
+                paddingBottom: 16,
+              }}>
                 {filtered.map(item => (
-                  <div key={item.id} style={s.bigCard} onClick={() => handleCardClick(item)}>
-                    <div style={s.imgWrap}>
-                      <img style={s.bigCardImg} src={item.img} alt={item.name} />
-                      <div style={s.badge}>{item.strength}</div>
+                  <div
+                    key={item.id}
+                    onClick={() => handleCardClick(item)}
+                    style={{
+                      flex: "0 0 140px",
+                      background: t.bg2,
+                      border: `1px solid ${t.border}`,
+                      borderRadius: 14,
+                      overflow: "hidden",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <div style={{ position: "relative", height: 110 }}>
+                      <img
+                        src={item.img}
+                        alt={item.name}
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      />
                       {item.isGroup && (
                         <div style={{
-                          position: "absolute", bottom: 14, left: 14,
-                          display: "flex", gap: 5,
+                          position: "absolute", bottom: 6, left: 6,
+                          display: "flex", gap: 3,
                         }}>
-                          {item.variants.map(v => (
+                          {item.variants.slice(0, 2).map(v => (
                             <div key={v.id} style={{
                               background: "rgba(0,0,0,0.55)",
-                              borderRadius: 99, padding: "3px 8px",
-                              fontSize: 9, color: "#F2EDE4", letterSpacing: 0.5,
+                              borderRadius: 99, padding: "2px 6px",
+                              fontSize: 8, color: "#F2EDE4", letterSpacing: 0.4,
                               textTransform: "uppercase",
                             }}>
                               {v.label}
@@ -119,14 +121,20 @@ export default function RecipesScreen({ navigate, s, t }) {
                         </div>
                       )}
                     </div>
-                    <div style={s.bigCardBody}>
-                      <div>
-                        <div style={s.bigCardLabel}>{item.label}</div>
-                        <div style={s.bigCardName}>{item.name}</div>
+                    <div style={{ padding: "10px 12px" }}>
+                      <div style={{
+                        fontSize: 9, letterSpacing: 1, textTransform: "uppercase",
+                        color: t.accent, fontWeight: 500,
+                      }}>
+                        {item.strength}
                       </div>
-                      <div style={s.bigCardRight}>
-                        <div style={s.bigCardTime}>{item.time}</div>
-                        <div style={s.goBtn}>→</div>
+                      <div style={{
+                        fontFamily: "'Libre Baskerville', serif",
+                        fontSize: 13, fontStyle: "italic", color: t.text,
+                        marginTop: 2,
+                        overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis",
+                      }}>
+                        {item.name}
                       </div>
                     </div>
                   </div>

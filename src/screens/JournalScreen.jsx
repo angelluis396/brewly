@@ -120,20 +120,19 @@ function DrinkCard({ drink, onClick, onRemove, t, s }) {
         </div>
       </div>
       <div style={s.entryMeta}>
-        <div style={s.metaItem}>
-          <span style={s.metaLabel}>Milk</span>
-          <span style={drink.milk_type ? s.metaVal : s.metaValNone}>
-            {drink.milk_type ? (drink.milk_amount ? `${drink.milk_amount}${drink.milk_unit} ${drink.milk_type}` : drink.milk_type) : "None"}
-          </span>
-        </div>
+        {drink.milk_type && (
+          <div style={s.metaItem}>
+            <span style={s.metaLabel}>Milk</span>
+            <span style={s.metaVal}>
+              {drink.milk_amount ? `${drink.milk_amount}${drink.milk_unit} ${drink.milk_type}` : drink.milk_type}
+            </span>
+          </div>
+        )}
         <div style={s.metaItem}>
           <span style={s.metaLabel}>Coffee</span>
           <span style={s.metaVal}>{drink.coffee_used}</span>
         </div>
       </div>
-      {drink.notes && (
-        <div style={s.entryNotes}>"{drink.notes}"</div>
-      )}
     </SwipeableCard>
   );
 }
