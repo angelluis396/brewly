@@ -254,9 +254,9 @@ export default function DrinkEntryForm({ navigate, s, t, units, item }) {
         <div style={styles.field}>
           <div style={styles.labelRow}>
             <span style={styles.label}>Notes</span>
-            <InfoIcon t={t} message="Tasting notes or tweaks. Start with '1.', '*', or '-' for a list." />
+            <InfoIcon t={t} message="Tasting notes, tweaks, what to try next time." />
           </div>
-          <NumberedTextarea value={notes} onChange={setNotes} t={t} />
+          <textarea style={styles.textarea} value={notes} onChange={e => setNotes(e.target.value)} />
         </div>
 
         {error && <div style={{ fontSize: 12, color: "#E24B4A", marginBottom: 12, textAlign: "center" }}>{error}</div>}

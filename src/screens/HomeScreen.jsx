@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import NavBar from "../components/NavBar";
+import SwipeableHero from "../components/SwipeableHero";
+import EmptyMyDrinks from "../components/EmptyMyDrinks";
 import { RECIPES, RECIPE_GROUPS } from "../data/recipes";
 import { METHODS } from "../data/methods";
 import { useJournal } from "../context/JournalContext";
-import CustomDrinkCard from "../components/CustomDrinkCard";
-import EmptyMyDrinks from "../components/EmptyMyDrinks";
+import { CoffeeCupIcon } from "../components/Icons";
 
 export default function HomeScreen({ navigate, s, t, units, favorites }) {
   const [activeTab, setActiveTab] = useState(favorites[0] || "Latte");
@@ -17,6 +18,26 @@ export default function HomeScreen({ navigate, s, t, units, favorites }) {
     const recipe = RECIPES.find(r => r.name === name);
     if (recipe) { navigate("RecipeDetail", recipe); return; }
   };
+
+  // Espresso drinks combined for the hero
+  const espressoItems = [...RECIPE_GROUPS, ...RECIPES]
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  const handleEspressoClick = (item) => {
+    if (RECIPE_GROUPS.find(g => g.id === item.id)) navigate("VariantDetail", item);
+    else navigate("RecipeDetail", item);
+  };
+
+  // Methods are already shaped right
+  const handleMethodClick = (item) => navigate("MethodDetail", item);
+
+  // Custom drinks need image fallback — they don't have an img field
+  const myDrinksItems = drinks.map(d => ({
+    ...d,
+    label: "Custom",
+    img: null, // will be handled by fallback in SwipeableHero
+  }));
+  const handleMyDrinkClick = (item) => navigate("DrinkEntryDetail", item);
 
   return (
     <div>
@@ -46,89 +67,134 @@ export default function HomeScreen({ navigate, s, t, units, favorites }) {
         )}
       </div>
 
-      {/* Espresso Drinks */}
-      <div style={{ ...s.section, marginTop: 24 }}>
-        <div style={s.sectionRow}>
+      {/* Espresso Drinks — Swipeable hero */}
+      <div style={{ marginTop: 24 }}>
+        <div style={{ ...s.sectionRow, padding: "0 26px 8px" }}>
           <span style={s.sectionTitle}>Espresso Drinks</span>
           <span style={s.seeAll} onClick={() => navigate("Recipes")}>All recipes →</span>
         </div>
-        <div style={s.recipesScroll}>
-          {[...RECIPE_GROUPS, ...RECIPES]
-            .sort((a, b) => a.name.localeCompare(b.name))
-            .map(item => (
-              <div
-                key={item.id || item.name}
-                style={s.recipeCard}
-                onClick={() => {
-                  if (RECIPE_GROUPS.find(g => g.id === item.id)) navigate("VariantDetail", item);
-                  else navigate("RecipeDetail", item);
-                }}
-              >
-                <img style={s.recipeImg} src={item.img} alt={item.name} />
-                <div style={s.recipeBody}>
-                  <div style={s.recipeLabel}>{item.label}</div>
-                  <div style={s.recipeName}>{item.name}</div>
-                </div>
-              </div>
-            ))}
-        </div>
+        <SwipeableHero
+          items={espressoItems}
+          onItemClick={handleEspressoClick}
+          t={t}
+        />
       </div>
 
-      {/* My Drinks */}
-      <div style={{ ...s.section, marginTop: 28 }}>
-        <div style={s.sectionRow}>
+      {/* My Drinks — Swipeable hero or empty state */}
+      <div style={{ marginTop: 24 }}>
+        <div style={{ ...s.sectionRow, padding: "0 26px 8px" }}>
           <span style={s.sectionTitle}>My Drinks</span>
           {drinks.length > 0 && (
             <span style={s.seeAll} onClick={() => navigate("Recipes")}>View all →</span>
           )}
         </div>
         {drinks.length === 0 ? (
-          <EmptyMyDrinks
-            t={t}
-            onCreateClick={() => navigate("Journal")}
-          />
-        ) : drinks.length === 1 ? (
-          <CustomDrinkCard
-            drink={drinks[0]}
-            t={t}
-            variant="single"
-            onClick={() => navigate("DrinkEntryDetail", drinks[0])}
-          />
-        ) : (
-          <div style={s.recipesScroll}>
-            {drinks.map(drink => (
-              <CustomDrinkCard
-                key={drink.id}
-                drink={drink}
-                t={t}
-                variant="card"
-                onClick={() => navigate("DrinkEntryDetail", drink)}
-              />
-            ))}
+          <div style={{ padding: "0 26px" }}>
+            <EmptyMyDrinks t={t} onCreateClick={() => navigate("Journal")} />
           </div>
+        ) : (
+          <CustomDrinksHero
+            drinks={myDrinksItems}
+            onItemClick={handleMyDrinkClick}
+            t={t}
+          />
         )}
       </div>
 
-      {/* Brew Methods */}
-      <div style={{ ...s.section, marginTop: 28 }}>
-        <div style={s.sectionRow}>
+      {/* Brew Methods — Swipeable hero */}
+      <div style={{ marginTop: 24, marginBottom: 24 }}>
+        <div style={{ ...s.sectionRow, padding: "0 26px 8px" }}>
           <span style={s.sectionTitle}>Brew Methods</span>
           <span style={s.seeAll} onClick={() => navigate("Methods")}>All methods →</span>
         </div>
-        <div style={s.recipesScroll}>
-          {METHODS.map(m => (
-            <div key={m.id} style={s.recipeCard} onClick={() => navigate("MethodDetail", m)}>
-              <img style={s.recipeImg} src={m.img} alt={m.name} />
-              <div style={s.recipeBody}>
-                <div style={s.recipeLabel}>{m.brewType}</div>
-                <div style={s.recipeName}>{m.name}</div>
-              </div>
-            </div>
-          ))}
-        </div>
+        <SwipeableHero
+          items={METHODS.map(m => ({ ...m, label: m.brewType }))}
+          onItemClick={handleMethodClick}
+          t={t}
+        />
       </div>
 
       <NavBar current="Home" navigate={navigate} s={s} t={t} />
+    </div>
+  );
+}
+
+// Custom variant for My Drinks since they don't have photos yet
+function CustomDrinksHero({ drinks, onItemClick, t }) {
+  const [activeIdx, setActiveIdx] = useState(0);
+  const touchStart = useRef(null);
+
+  if (drinks.length === 0) return null;
+  const active = drinks[activeIdx];
+
+  const next = () => {
+    if (drinks.length <= 1) return;
+    setActiveIdx((activeIdx + 1) % drinks.length);
+  };
+  const prev = () => {
+    if (drinks.length <= 1) return;
+    setActiveIdx((activeIdx - 1 + drinks.length) % drinks.length);
+  };
+
+  const handleTouchStart = (e) => {
+    touchStart.current = e.touches[0].clientX;
+  };
+  const handleTouchEnd = (e) => {
+    if (touchStart.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchStart.current;
+    if (Math.abs(dx) > 50) {
+      if (dx < 0) next();
+      else prev();
+    }
+    touchStart.current = null;
+  };
+
+  return (
+    <div
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      onClick={() => onItemClick(active)}
+      style={{
+        position: "relative",
+        width: "100%",
+        height: 180,
+        background: t.bg3,
+        cursor: "pointer",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        alignItems: "center",
+        borderTop: `2px dashed ${t.accent}88`,
+        borderBottom: `2px dashed ${t.accent}88`,
+      }}
+    >
+      <CoffeeCupIcon size={48} color={t.accent} />
+      <div style={{ fontSize: 9, letterSpacing: 1.2, textTransform: "uppercase", color: t.accent, marginTop: 12 }}>
+        Custom
+      </div>
+      <div style={{
+        fontFamily: "'Libre Baskerville', serif", fontStyle: "italic",
+        fontSize: 22, color: t.text, marginTop: 4,
+      }}>
+        {active.name}
+      </div>
+
+      {drinks.length > 1 && (
+        <div style={{
+          position: "absolute", bottom: 14, right: 18,
+          display: "flex", gap: 5,
+        }}>
+          {drinks.map((_, i) => (
+            <div key={i} style={{
+              height: 6,
+              width: i === activeIdx ? 18 : 6,
+              borderRadius: i === activeIdx ? 3 : "50%",
+              background: i === activeIdx ? t.accent : t.border,
+              transition: "all 0.3s ease",
+            }} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
