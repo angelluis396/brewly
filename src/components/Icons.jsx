@@ -18,3 +18,19 @@ export const PlusIcon = ({ size = 18, color = "currentColor" }) => (
     <line x1="5" y1="12" x2="19" y2="12" />
   </svg>
 );
+
+export const CoffeeCupIcon = ({ size = 32, color = "currentColor" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17 8h1a4 4 0 0 1 0 8h-1" />
+    <path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4z" />
+    <line x1="6" y1="2" x2="6" y2="4" />
+    <line x1="10" y1="2" x2="10" y2="4" />
+    <line x1="14" y1="2" x2="14" y2="4" />
+  </svg>
+);
+
+export const ChevronDownIcon = ({ size = 14, color = "currentColor", style = {} }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={style}>
+    <polyline points="6 9 12 15 18 9" />
+  </svg>
+);

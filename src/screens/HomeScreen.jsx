@@ -2,19 +2,20 @@ import { useState } from "react";
 import NavBar from "../components/NavBar";
 import { RECIPES, RECIPE_GROUPS } from "../data/recipes";
 import { METHODS } from "../data/methods";
+import { useJournal } from "../context/JournalContext";
+import CustomDrinkCard from "../components/CustomDrinkCard";
+import EmptyMyDrinks from "../components/EmptyMyDrinks";
 
 export default function HomeScreen({ navigate, s, t, units, favorites }) {
   const [activeTab, setActiveTab] = useState(favorites[0] || "Latte");
+  const { drinks } = useJournal();
 
   const handleFavClick = (name) => {
     setActiveTab(name);
-    // Check groups first
     const group = RECIPE_GROUPS.find(g => g.name === name);
     if (group) { navigate("VariantDetail", group); return; }
-    // Then standalone recipes
     const recipe = RECIPES.find(r => r.name === name);
     if (recipe) { navigate("RecipeDetail", recipe); return; }
-    // Methods are not favorites — do nothing if somehow matched
   };
 
   return (
@@ -71,6 +72,41 @@ export default function HomeScreen({ navigate, s, t, units, favorites }) {
               </div>
             ))}
         </div>
+      </div>
+
+      {/* My Drinks */}
+      <div style={{ ...s.section, marginTop: 28 }}>
+        <div style={s.sectionRow}>
+          <span style={s.sectionTitle}>My Drinks</span>
+          {drinks.length > 0 && (
+            <span style={s.seeAll} onClick={() => navigate("Recipes")}>View all →</span>
+          )}
+        </div>
+        {drinks.length === 0 ? (
+          <EmptyMyDrinks
+            t={t}
+            onCreateClick={() => navigate("Journal")}
+          />
+        ) : drinks.length === 1 ? (
+          <CustomDrinkCard
+            drink={drinks[0]}
+            t={t}
+            variant="single"
+            onClick={() => navigate("DrinkEntryDetail", drinks[0])}
+          />
+        ) : (
+          <div style={s.recipesScroll}>
+            {drinks.map(drink => (
+              <CustomDrinkCard
+                key={drink.id}
+                drink={drink}
+                t={t}
+                variant="card"
+                onClick={() => navigate("DrinkEntryDetail", drink)}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Brew Methods */}
