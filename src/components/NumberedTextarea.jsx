@@ -1,31 +1,28 @@
 import { useRef, useEffect, useState } from "react";
 
 /**
- * NumberedTextarea — a textarea that shows visual line numbers (1. 2. 3.) by default.
+ * NumberedTextarea — textarea with smart list features.
  *
- * Smart detection: if the user's FIRST line starts with a list marker like '1.',
- * '*', or '-', the auto-numbering turns off entirely and the user controls the
- * list themselves. This lets power users use markdown-style bullets.
+ * Two modes:
+ *  1. AUTO-NUMBER MODE (default): visual line numbers (1. 2. 3.) in a gutter on the left.
+ *     Numbers are display-only and never saved to the value.
+ *  2. USER-CONTROLLED MODE: if the FIRST non-empty line starts with a list marker
+ *     ('1.', '1)', '*', '-', '•'), the gutter hides and the user controls their own
+ *     list markers.
  *
- * Numbers are display-only — they're not part of the saved value.
- *
- * Props:
- *  - value: current text value
- *  - onChange: (newValue) => void
- *  - placeholder: optional placeholder text
- *  - t: theme object
- *  - minHeight: optional override (default 70px)
+ * Smart continuation (user-controlled mode only):
+ *  - Press Enter on a line starting with '*' or '-' or '•' → next line auto-starts with same marker
+ *  - Press Enter on '1.' → next line auto-starts with '2.', '3.', etc.
+ *  - Press Enter on an EMPTY bullet line → removes the marker (exits the list)
  */
 export default function NumberedTextarea({ value, onChange, placeholder, t, minHeight = 70 }) {
   const textareaRef = useRef(null);
   const lineNumbersRef = useRef(null);
   const [computedHeight, setComputedHeight] = useState(minHeight);
 
-  // Detect mode: if the first non-empty line starts with a marker, hide numbers
   const detectUserControlled = (text) => {
     const firstLine = (text || "").split("\n").find(l => l.trim().length > 0) || "";
     const trimmed = firstLine.trimStart();
-    // Check for: "1.", "1)", "-", "*", "•"
     return /^(\d+[.)]\s|[-*•]\s)/.test(trimmed);
   };
 
@@ -42,7 +39,76 @@ export default function NumberedTextarea({ value, onChange, placeholder, t, minH
     setComputedHeight(newHeight);
   }, [value, minHeight]);
 
-  // Sync scroll between line numbers and textarea
+  // ─── Smart list continuation on Enter ────────────────────────
+  const handleKeyDown = (e) => {
+    if (e.key !== "Enter") return;
+    if (!userControlled) return;
+
+    const ta = textareaRef.current;
+    if (!ta) return;
+
+    const cursor = ta.selectionStart;
+    const text = ta.value;
+
+    // Find the current line (from last newline before cursor to cursor)
+    const beforeCursor = text.slice(0, cursor);
+    const afterCursor = text.slice(cursor);
+    const lineStart = beforeCursor.lastIndexOf("\n") + 1;
+    const currentLine = beforeCursor.slice(lineStart);
+
+    // Match list markers
+    const bulletMatch = currentLine.match(/^(\s*)([-*•])\s(.*)$/);
+    const numberMatch = currentLine.match(/^(\s*)(\d+)([.)])\s(.*)$/);
+
+    if (bulletMatch) {
+      const [, indent, marker, content] = bulletMatch;
+      if (content.trim() === "") {
+        // Empty bullet line — exit the list
+        e.preventDefault();
+        const newText = text.slice(0, lineStart) + "\n" + afterCursor;
+        onChange(newText);
+        // Position cursor after the new line break
+        setTimeout(() => {
+          ta.selectionStart = ta.selectionEnd = lineStart + 1;
+        }, 0);
+      } else {
+        // Continue the bullet
+        e.preventDefault();
+        const insert = `\n${indent}${marker} `;
+        const newText = beforeCursor + insert + afterCursor;
+        onChange(newText);
+        setTimeout(() => {
+          ta.selectionStart = ta.selectionEnd = cursor + insert.length;
+        }, 0);
+      }
+      return;
+    }
+
+    if (numberMatch) {
+      const [, indent, num, punct, content] = numberMatch;
+      if (content.trim() === "") {
+        // Empty numbered line — exit the list
+        e.preventDefault();
+        const newText = text.slice(0, lineStart) + "\n" + afterCursor;
+        onChange(newText);
+        setTimeout(() => {
+          ta.selectionStart = ta.selectionEnd = lineStart + 1;
+        }, 0);
+      } else {
+        // Continue with next number
+        e.preventDefault();
+        const nextNum = parseInt(num, 10) + 1;
+        const insert = `\n${indent}${nextNum}${punct} `;
+        const newText = beforeCursor + insert + afterCursor;
+        onChange(newText);
+        setTimeout(() => {
+          ta.selectionStart = ta.selectionEnd = cursor + insert.length;
+        }, 0);
+      }
+      return;
+    }
+  };
+
   const handleScroll = () => {
     if (lineNumbersRef.current && textareaRef.current) {
       lineNumbersRef.current.scrollTop = textareaRef.current.scrollTop;
@@ -61,7 +127,6 @@ export default function NumberedTextarea({ value, onChange, placeholder, t, minH
       background: "transparent",
       overflow: "hidden",
     }}>
-      {/* Line numbers gutter (only shown when not user-controlled) */}
       {!userControlled && (
         <div
           ref={lineNumbersRef}
@@ -70,7 +135,6 @@ export default function NumberedTextarea({ value, onChange, placeholder, t, minH
             top: 0, left: 0, bottom: 0,
             width: gutterWidth,
             padding: "12px 0 12px 12px",
-            paddingTop: 12,
             fontFamily: "'Outfit', sans-serif",
             fontSize: 13,
             color: t.accent,
@@ -93,6 +157,7 @@ export default function NumberedTextarea({ value, onChange, placeholder, t, minH
         ref={textareaRef}
         value={value || ""}
         onChange={(e) => onChange(e.target.value)}
+        onKeyDown={handleKeyDown}
         onScroll={handleScroll}
         placeholder={placeholder}
         style={{

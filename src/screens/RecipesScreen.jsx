@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import NavBar from "../components/NavBar";
 import { RECIPES, RECIPE_GROUPS, STRENGTH_ORDER } from "../data/recipes";
@@ -8,6 +8,87 @@ import EmptyMyDrinks from "../components/EmptyMyDrinks";
 import { ChevronDownIcon } from "../components/Icons";
 
 const FILTERS = ["All", "Mild", "Bold", "Extra Bold"];
+
+// Rotating hero image preview shown when section is collapsed
+function CollapsedPreview({ items, onExpand, t }) {
+  const [activeIdx, setActiveIdx] = useState(0);
+  // Use up to 5 items for the rotation
+  const previewItems = items.slice(0, 5);
+
+  // Auto-rotate every 3 seconds
+  useEffect(() => {
+    if (previewItems.length <= 1) return;
+    const interval = setInterval(() => {
+      setActiveIdx((prev) => (prev + 1) % previewItems.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [previewItems.length]);
+
+  if (previewItems.length === 0) return null;
+  const active = previewItems[activeIdx];
+
+  return (
+    <div
+      onClick={onExpand}
+      style={{
+        position: "relative",
+        height: 140,
+        borderRadius: 14,
+        overflow: "hidden",
+        margin: "8px 0 16px",
+        cursor: "pointer",
+      }}
+    >
+      <AnimatePresence mode="sync">
+        <motion.img
+          key={active.id}
+          src={active.img}
+          alt={active.name}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.6 }}
+          style={{
+            position: "absolute",
+            top: 0, left: 0,
+            width: "100%", height: "100%",
+            objectFit: "cover",
+          }}
+        />
+      </AnimatePresence>
+      <div style={{
+        position: "absolute",
+        bottom: 0, left: 0, right: 0,
+        background: "linear-gradient(to top, rgba(0,0,0,0.75), transparent)",
+        padding: 14,
+        color: "#fff",
+      }}>
+        <div style={{
+          fontFamily: "'Libre Baskerville', serif",
+          fontStyle: "italic", fontSize: 16,
+        }}>
+          {active.name}
+        </div>
+        <div style={{
+          fontSize: 10, color: "rgba(255,255,255,0.85)",
+          letterSpacing: 0.5, textTransform: "uppercase",
+          marginTop: 2,
+        }}>
+          Tap to view all
+        </div>
+        <div style={{ display: "flex", gap: 4, marginTop: 8 }}>
+          {previewItems.map((_, i) => (
+            <div key={i} style={{
+              width: 6, height: 6, borderRadius: "50%",
+              background: i === activeIdx ? "#fff" : "rgba(255,255,255,0.4)",
+              transition: "background 0.3s ease",
+            }} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function RecipesScreen({ navigate, s, t }) {
   const [filter, setFilter] = useState("All");
@@ -87,9 +168,10 @@ export default function RecipesScreen({ navigate, s, t }) {
           </motion.div>
         </div>
 
-        <AnimatePresence initial={false}>
-          {espressoOpen && (
+        <AnimatePresence initial={false} mode="wait">
+          {espressoOpen ? (
             <motion.div
+              key="expanded"
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
@@ -133,6 +215,21 @@ export default function RecipesScreen({ navigate, s, t }) {
                   </div>
                 ))}
               </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="collapsed"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 400, damping: 35 }}
+              style={{ overflow: "hidden" }}
+            >
+              <CollapsedPreview
+                items={filtered}
+                onExpand={() => setEspressoOpen(true)}
+                t={t}
+              />
             </motion.div>
           )}
         </AnimatePresence>

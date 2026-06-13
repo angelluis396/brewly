@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import InfoIcon from "../components/InfoIcon";
+import NumberedTextarea from "../components/NumberedTextarea";
 import { useJournal } from "../context/JournalContext";
 
 const ROAST_LEVELS = [
@@ -119,15 +120,13 @@ export default function EspressoEntryForm({ navigate, s, t, units, item }) {
     : `${MONTHS[roastMonth]} ${roastDay}`;
 
   return (
-    <div>
+    <div style={{ paddingBottom: 110 }}>
       <div style={{ ...s.header, display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: 20 }}>
         <span onClick={() => navigate("Journal")} style={{ fontSize: 12, color: t.textMuted, cursor: "pointer" }}>← Cancel</span>
         <div style={{ fontFamily: "'Libre Baskerville', serif", fontSize: 20, fontStyle: "italic", color: t.text }}>
           {editing ? "Edit Shot" : "New Shot"}
         </div>
-        <span onClick={handleSave} style={{ fontSize: 13, color: t.accent, fontWeight: 500, cursor: "pointer", opacity: saving ? 0.5 : 1 }}>
-          {saving ? "..." : "Save"}
-        </span>
+        <span style={{ width: 50 }} />
       </div>
 
       <div style={{ padding: "20px 26px 0" }}>
@@ -306,13 +305,48 @@ export default function EspressoEntryForm({ navigate, s, t, units, item }) {
         <div style={styles.field}>
           <div style={styles.labelRow}>
             <span style={styles.label}>Notes</span>
-            <InfoIcon t={t} message="Tasting notes, what to adjust on the next pull." />
+            <InfoIcon t={t} message="Tasting notes or tweaks. Start with '1.', '*', or '-' for a list." />
           </div>
-          <textarea style={styles.textarea} value={notes} onChange={e => setNotes(e.target.value)} />
+          <NumberedTextarea value={notes} onChange={setNotes} t={t} />
         </div>
 
         {error && <div style={{ fontSize: 12, color: "#E24B4A", marginBottom: 12, textAlign: "center" }}>{error}</div>}
 
+      </div>
+
+      {/* Floating Save button */}
+      <div style={{
+        position: "fixed",
+        bottom: 20,
+        left: "50%",
+        transform: "translateX(-50%)",
+        width: "calc(100% - 32px)",
+        maxWidth: 400,
+        zIndex: 50,
+        paddingBottom: "env(safe-area-inset-bottom)",
+      }}>
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          style={{
+            width: "100%",
+            padding: "16px 24px",
+            background: t.accent,
+            color: "#fff",
+            border: "none",
+            borderRadius: 14,
+            fontFamily: "'Outfit', sans-serif",
+            fontSize: 15,
+            fontWeight: 500,
+            letterSpacing: 0.3,
+            cursor: saving ? "default" : "pointer",
+            opacity: saving ? 0.6 : 1,
+            boxShadow: `0 8px 24px ${t.accent}55`,
+            transition: "transform 0.15s ease, box-shadow 0.15s ease",
+          }}
+        >
+          {saving ? "Saving..." : (editing ? "Save Changes" : "Save Shot")}
+        </button>
       </div>
 
       {/* Date Picker Modal */}
