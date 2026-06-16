@@ -165,12 +165,10 @@ export default function DrinkEntryForm({ navigate, s, t, units, item }) {
 
   return (
     <div style={{ paddingBottom: 110 }}>
-      <div style={{ ...s.header, display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: 20 }}>
-        <span onClick={() => navigate("Journal")} style={{ fontSize: 12, color: t.textMuted, cursor: "pointer" }}>← Cancel</span>
+      <div style={{ ...s.header, paddingBottom: 20, textAlign: "center" }}>
         <div style={{ fontFamily: "'Libre Baskerville', serif", fontSize: 20, fontStyle: "italic", color: t.text }}>
           {editing ? "Edit Entry" : "New Entry"}
         </div>
-        <span style={{ width: 50 }} />
       </div>
 
       <div style={{ padding: "20px 26px 0" }}>
@@ -262,7 +260,7 @@ export default function DrinkEntryForm({ navigate, s, t, units, item }) {
         {error && <div style={{ fontSize: 12, color: "#E24B4A", marginBottom: 12, textAlign: "center" }}>{error}</div>}
       </div>
 
-      {/* Floating Save button */}
+      {/* Floating Cancel + Save buttons */}
       <div style={{
         position: "fixed",
         bottom: 20,
@@ -272,25 +270,45 @@ export default function DrinkEntryForm({ navigate, s, t, units, item }) {
         maxWidth: 400,
         zIndex: 50,
         paddingBottom: "env(safe-area-inset-bottom)",
+        display: "flex",
+        gap: 10,
       }}>
+        <button
+          onClick={() => navigate("Journal")}
+          style={{
+            flex: 1,
+            padding: "16px 12px",
+            background: t.bg,
+            color: t.text,
+            border: `1px solid ${t.border}`,
+            borderRadius: 14,
+            fontFamily: "'Outfit', sans-serif",
+            fontSize: 14,
+            fontWeight: 500,
+            letterSpacing: 0.3,
+            cursor: "pointer",
+            boxShadow: `0 4px 16px rgba(0,0,0,0.08)`,
+          }}
+        >
+          Cancel
+        </button>
         <button
           onClick={handleSave}
           disabled={saving}
           style={{
-            width: "100%",
-            padding: "16px 24px",
+            flex: 2,
+            padding: "16px 12px",
             background: t.accent,
             color: "#fff",
             border: "none",
             borderRadius: 14,
             fontFamily: "'Outfit', sans-serif",
-            fontSize: 15,
+            fontSize: 14,
             fontWeight: 500,
             letterSpacing: 0.3,
             cursor: saving ? "default" : "pointer",
             opacity: saving ? 0.6 : 1,
             boxShadow: `0 8px 24px ${t.accent}55`,
-            transition: "transform 0.15s ease, box-shadow 0.15s ease",
           }}
         >
           {saving ? "Saving..." : (editing ? "Save Changes" : "Save Recipe")}

@@ -20,25 +20,35 @@ function daysInMonth(month) {
 
 export default function EspressoEntryForm({ navigate, s, t, units, item }) {
   const { addEspresso, updateEspresso, grinders, defaultGrinder } = useJournal();
-  const editing = !!item;
 
-  const initialRoastDate = item?.roast_date ? new Date(item.roast_date) : null;
+  // Detect if this is a "dial in" entry (item has _dialInFrom marker)
+  const dialInFrom = item?._dialInFrom || null;
+  const editing = !!item && !dialInFrom;
+
+  // For new dial-in entries, pre-fill bean info but clear grinder/dose/yield/time
+  const source = dialInFrom || item;
+
+  const initialRoastDate = source?.roast_date ? new Date(source.roast_date) : null;
   const initialMonth = initialRoastDate ? initialRoastDate.getMonth() : new Date().getMonth();
   const initialDay = initialRoastDate ? initialRoastDate.getDate() : new Date().getDate();
 
-  const [beanName, setBeanName] = useState(item?.bean_name || "");
-  const [roastDateUnknown, setRoastDateUnknown] = useState(!item?.roast_date && editing);
+  const [beanName, setBeanName] = useState(source?.bean_name || "");
+  const [roastDateUnknown, setRoastDateUnknown] = useState(!source?.roast_date && (editing || !!dialInFrom));
   const [roastMonth, setRoastMonth] = useState(initialMonth);
   const [roastDay, setRoastDay] = useState(initialDay);
-  const [roastLevel, setRoastLevel] = useState(item?.roast_level || ROAST_LEVELS[2].id);
-  const [grinderId, setGrinderId] = useState(item?.grinder_id || defaultGrinder?.id || "");
-  const [showRpm, setShowRpm] = useState(!!item?.grinder_rpm);
-  const [grinderSetting, setGrinderSetting] = useState(item?.grinder_setting || "");
-  const [grinderRpm, setGrinderRpm] = useState(item?.grinder_rpm || "");
-  const [dose, setDose] = useState(item?.dose || "");
-  const [yieldVal, setYieldVal] = useState(item?.yield || "");
-  const [brewTime, setBrewTime] = useState(item?.brew_time || "");
-  const [notes, setNotes] = useState(item?.notes || "");
+  const [roastLevel, setRoastLevel] = useState(source?.roast_level || ROAST_LEVELS[2].id);
+
+  // Grinder/setting/dose/yield/time — empty when dialing in
+  const [grinderId, setGrinderId] = useState(dialInFrom ? (defaultGrinder?.id || "") : (item?.grinder_id || defaultGrinder?.id || ""));
+  const [showRpm, setShowRpm] = useState(!dialInFrom && !!item?.grinder_rpm);
+  const [grinderSetting, setGrinderSetting] = useState(dialInFrom ? "" : (item?.grinder_setting || ""));
+  const [grinderRpm, setGrinderRpm] = useState(dialInFrom ? "" : (item?.grinder_rpm || ""));
+  const [dose, setDose] = useState(dialInFrom ? "" : (item?.dose || ""));
+  const [yieldVal, setYieldVal] = useState(dialInFrom ? "" : (item?.yield || ""));
+  const [brewTime, setBrewTime] = useState(dialInFrom ? "" : (item?.brew_time || ""));
+  const [notes, setNotes] = useState(dialInFrom ? "" : (item?.notes || ""));
+  const [dialedIn, setDialedIn] = useState(dialInFrom ? false : (item?.dialed_in || false));
+
   const [showGrinderPicker, setShowGrinderPicker] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [error, setError] = useState("");
@@ -47,6 +57,12 @@ export default function EspressoEntryForm({ navigate, s, t, units, item }) {
   const selectedGrinder = grinders.find(g => g.id === grinderId);
   const ratio = dose && yieldVal ? `1:${(Number(yieldVal) / Number(dose)).toFixed(1)}` : "—";
   const currentLevelIdx = ROAST_LEVELS.findIndex(l => l.id === roastLevel);
+
+  // Previous values for dial-in reference
+  const prevGrinder = dialInFrom ? grinders.find(g => g.id === dialInFrom.grinder_id) : null;
+  const prevRatio = dialInFrom && dialInFrom.dose && dialInFrom.yield
+    ? `1:${(Number(dialInFrom.yield) / Number(dialInFrom.dose)).toFixed(1)}`
+    : null;
 
   const handleSave = async () => {
     if (!beanName.trim()) return setError("Bean name is required.");
@@ -77,6 +93,7 @@ export default function EspressoEntryForm({ navigate, s, t, units, item }) {
       brew_time: brewTime ? Number(brewTime) : null,
       unit: "g",
       notes: notes.trim() || null,
+      dialed_in: dialedIn,
     };
 
     const { error: saveError } = editing
@@ -121,12 +138,15 @@ export default function EspressoEntryForm({ navigate, s, t, units, item }) {
 
   return (
     <div style={{ paddingBottom: 110 }}>
-      <div style={{ ...s.header, display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: 20 }}>
-        <span onClick={() => navigate("Journal")} style={{ fontSize: 12, color: t.textMuted, cursor: "pointer" }}>← Cancel</span>
+      <div style={{ ...s.header, paddingBottom: 20, textAlign: "center" }}>
         <div style={{ fontFamily: "'Libre Baskerville', serif", fontSize: 20, fontStyle: "italic", color: t.text }}>
-          {editing ? "Edit Shot" : "New Shot"}
+          {dialInFrom ? "Dial In" : (editing ? "Edit Shot" : "New Shot")}
         </div>
-        <span style={{ width: 50 }} />
+        {dialInFrom && (
+          <div style={{ fontSize: 11, color: t.textMuted, fontWeight: 300, marginTop: 4 }}>
+            Adjust grinder, dose, yield, and time
+          </div>
+        )}
       </div>
 
       <div style={{ padding: "20px 26px 0" }}>
@@ -244,6 +264,61 @@ export default function EspressoEntryForm({ navigate, s, t, units, item }) {
           </div>
         </div>
 
+        {/* Previous shot reference banner (dial-in mode only) */}
+        {dialInFrom && (
+          <div style={{
+            background: `${t.accent}11`,
+            border: `1px solid ${t.accent}44`,
+            borderRadius: 12,
+            padding: "12px 14px",
+            marginBottom: 14,
+          }}>
+            <div style={{
+              fontSize: 9, color: t.accent, letterSpacing: 1, textTransform: "uppercase",
+              fontWeight: 500, marginBottom: 8,
+            }}>
+              Previous Shot
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 14, fontSize: 11 }}>
+              {prevGrinder && (
+                <div>
+                  <div style={{ color: t.textMuted, fontSize: 9, letterSpacing: 0.5, textTransform: "uppercase" }}>Grinder</div>
+                  <div style={{ color: t.text, fontWeight: 500 }}>{prevGrinder.name}</div>
+                </div>
+              )}
+              {dialInFrom.grinder_setting && (
+                <div>
+                  <div style={{ color: t.textMuted, fontSize: 9, letterSpacing: 0.5, textTransform: "uppercase" }}>Setting</div>
+                  <div style={{ color: t.text, fontWeight: 500 }}>
+                    {dialInFrom.grinder_setting}
+                    {dialInFrom.grinder_rpm && ` · ${dialInFrom.grinder_rpm} RPM`}
+                  </div>
+                </div>
+              )}
+              <div>
+                <div style={{ color: t.textMuted, fontSize: 9, letterSpacing: 0.5, textTransform: "uppercase" }}>Dose</div>
+                <div style={{ color: t.text, fontWeight: 500 }}>{dialInFrom.dose}{dialInFrom.unit || "g"}</div>
+              </div>
+              <div>
+                <div style={{ color: t.textMuted, fontSize: 9, letterSpacing: 0.5, textTransform: "uppercase" }}>Yield</div>
+                <div style={{ color: t.text, fontWeight: 500 }}>{dialInFrom.yield}{dialInFrom.unit || "g"}</div>
+              </div>
+              {dialInFrom.brew_time && (
+                <div>
+                  <div style={{ color: t.textMuted, fontSize: 9, letterSpacing: 0.5, textTransform: "uppercase" }}>Time</div>
+                  <div style={{ color: t.text, fontWeight: 500 }}>{dialInFrom.brew_time}s</div>
+                </div>
+              )}
+              {prevRatio && (
+                <div>
+                  <div style={{ color: t.textMuted, fontSize: 9, letterSpacing: 0.5, textTransform: "uppercase" }}>Ratio</div>
+                  <div style={{ color: t.accent, fontWeight: 500, fontFamily: "'Libre Baskerville', serif", fontStyle: "italic" }}>{prevRatio}</div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Setting + RPM */}
         <div style={{ ...styles.field, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           <div>
@@ -296,10 +371,45 @@ export default function EspressoEntryForm({ navigate, s, t, units, item }) {
           border: `1px dashed ${t.accent}`, borderRadius: 10,
           padding: "10px 14px",
           display: "flex", justifyContent: "space-between", alignItems: "center",
-          marginBottom: 14, background: "transparent",
+          marginBottom: 10, background: "transparent",
         }}>
           <span style={{ fontSize: 10, color: t.textMuted, letterSpacing: 0.5, textTransform: "uppercase" }}>Ratio</span>
           <span style={{ fontFamily: "'Libre Baskerville', serif", fontSize: 18, fontStyle: "italic", color: t.accent }}>{ratio}</span>
+        </div>
+
+        {/* Dialed In toggle */}
+        <div
+          onClick={() => setDialedIn(!dialedIn)}
+          style={{
+            border: `1px solid ${dialedIn ? t.accent : t.border}`,
+            background: dialedIn ? `${t.accent}11` : "transparent",
+            borderRadius: 10,
+            padding: "12px 14px",
+            display: "flex", justifyContent: "space-between", alignItems: "center",
+            marginBottom: 14, cursor: "pointer",
+            transition: "all 0.2s ease",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{
+              width: 20, height: 20, borderRadius: 6,
+              border: `2px solid ${dialedIn ? t.accent : t.border}`,
+              background: dialedIn ? t.accent : "transparent",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              color: "#fff", fontSize: 11, fontWeight: 700,
+              flexShrink: 0,
+            }}>
+              {dialedIn && "✓"}
+            </div>
+            <div>
+              <div style={{ fontSize: 13, color: t.text, fontWeight: 500 }}>
+                Dialed In
+              </div>
+              <div style={{ fontSize: 11, color: t.textMuted, fontWeight: 300, marginTop: 2 }}>
+                Mark this shot as your go-to recipe
+              </div>
+            </div>
+          </div>
         </div>
 
         <div style={styles.field}>
@@ -314,7 +424,7 @@ export default function EspressoEntryForm({ navigate, s, t, units, item }) {
 
       </div>
 
-      {/* Floating Save button */}
+      {/* Floating Cancel + Save buttons */}
       <div style={{
         position: "fixed",
         bottom: 20,
@@ -324,28 +434,48 @@ export default function EspressoEntryForm({ navigate, s, t, units, item }) {
         maxWidth: 400,
         zIndex: 50,
         paddingBottom: "env(safe-area-inset-bottom)",
+        display: "flex",
+        gap: 10,
       }}>
+        <button
+          onClick={() => navigate("Journal")}
+          style={{
+            flex: 1,
+            padding: "16px 12px",
+            background: t.bg,
+            color: t.text,
+            border: `1px solid ${t.border}`,
+            borderRadius: 14,
+            fontFamily: "'Outfit', sans-serif",
+            fontSize: 14,
+            fontWeight: 500,
+            letterSpacing: 0.3,
+            cursor: "pointer",
+            boxShadow: `0 4px 16px rgba(0,0,0,0.08)`,
+          }}
+        >
+          Cancel
+        </button>
         <button
           onClick={handleSave}
           disabled={saving}
           style={{
-            width: "100%",
-            padding: "16px 24px",
+            flex: 2,
+            padding: "16px 12px",
             background: t.accent,
             color: "#fff",
             border: "none",
             borderRadius: 14,
             fontFamily: "'Outfit', sans-serif",
-            fontSize: 15,
+            fontSize: 14,
             fontWeight: 500,
             letterSpacing: 0.3,
             cursor: saving ? "default" : "pointer",
             opacity: saving ? 0.6 : 1,
             boxShadow: `0 8px 24px ${t.accent}55`,
-            transition: "transform 0.15s ease, box-shadow 0.15s ease",
           }}
         >
-          {saving ? "Saving..." : (editing ? "Save Changes" : "Save Shot")}
+          {saving ? "Saving..." : (dialInFrom ? "Save Dial-In" : (editing ? "Save Changes" : "Save Shot"))}
         </button>
       </div>
 

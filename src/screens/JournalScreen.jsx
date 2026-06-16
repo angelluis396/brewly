@@ -147,7 +147,19 @@ function EspressoCard({ entry, grinders, onClick, onRemove, t, s }) {
     <SwipeableCard onClick={onClick} onRemove={onRemove} t={t}>
       <div style={s.entryHead}>
         <div>
-          <div style={s.entryName}>{entry.bean_name}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 3 }}>
+            <div style={{ ...s.entryName, marginBottom: 0 }}>{entry.bean_name}</div>
+            {entry.dialed_in && (
+              <div style={{
+                display: "inline-flex", alignItems: "center", gap: 3,
+                background: t.accent, color: "#fff",
+                fontSize: 8, fontWeight: 500, letterSpacing: 0.5, textTransform: "uppercase",
+                padding: "2px 6px", borderRadius: 99,
+              }}>
+                ✓ Dialed
+              </div>
+            )}
+          </div>
           <div style={s.entryDate}>
             {formatDate(entry.created_at)}
             {roastDate && ` · Roasted ${roastDate}`}

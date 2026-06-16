@@ -40,7 +40,8 @@ export default function RecipesScreen({ navigate, s, t }) {
   };
 
   return (
-    <div>
+    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+      <div style={{ flex: 1 }}>
       <div style={s.header}>
         <div style={s.backRow}>
           <span style={s.backArrow} onClick={() => navigate("Home")}>←</span>
@@ -209,6 +210,7 @@ export default function RecipesScreen({ navigate, s, t }) {
             </motion.div>
           )}
         </AnimatePresence>
+      </div>
       </div>
 
       <NavBar current="Recipes" navigate={navigate} s={s} t={t} />
