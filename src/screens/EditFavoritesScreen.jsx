@@ -2,10 +2,12 @@ import { useState, useRef } from "react";
 import { motion, Reorder, AnimatePresence, useMotionValue, useTransform, animate } from "framer-motion";
 import NavBar from "../components/NavBar";
 import { RECIPES, RECIPE_GROUPS } from "../data/recipes";
+import { useJournal } from "../context/JournalContext";
+import { CoffeeCupIcon } from "../components/Icons";
 
-const ALL_RECIPES = [
-  ...RECIPE_GROUPS.map(g => ({ name: g.name, label: g.label, strength: g.strength, imgSm: g.imgSm, type: "group" })),
-  ...RECIPES.map(r => ({ name: r.name, label: r.label, strength: r.strength, imgSm: r.imgSm, type: "recipe" })),
+const BUILT_IN = [
+  ...RECIPE_GROUPS.map(g => ({ key: g.name, name: g.name, label: g.label, strength: g.strength, imgSm: g.imgSm, type: "builtin" })),
+  ...RECIPES.map(r => ({ key: r.name, name: r.name, label: r.label, strength: r.strength, imgSm: r.imgSm, type: "builtin" })),
 ].sort((a, b) => a.name.localeCompare(b.name));
 
 const DragHandle = ({ color }) => (
@@ -19,11 +21,10 @@ const REVEAL_DISTANCE = 110;
 
 function FavoriteItem({ item, onRemove, t, s, isLast }) {
   const x = useMotionValue(0);
-  // Reactive opacity for the Remove button — fades in as user swipes
   const removeOpacity = useTransform(x, [-10, -50], [0, 1]);
 
   const startX = useRef(null);
-  const startOffset = useRef(0); // x position at touch start
+  const startOffset = useRef(0);
 
   const handleTouchStart = (e) => {
     startX.current = e.touches[0].clientX;
@@ -34,14 +35,12 @@ function FavoriteItem({ item, onRemove, t, s, isLast }) {
     if (startX.current === null) return;
     const dx = e.touches[0].clientX - startX.current;
     const newX = startOffset.current + dx;
-    // Clamp: never positive (can't drag past closed), never past max reveal
     x.set(Math.max(-REVEAL_DISTANCE * 1.5, Math.min(0, newX)));
   };
 
   const handleTouchEnd = () => {
     if (startX.current === null) return;
     const currentX = x.get();
-    // If past 50% threshold, snap open. Otherwise snap closed.
     if (currentX < -REVEAL_DISTANCE / 2) {
       animate(x, -REVEAL_DISTANCE, { type: "spring", stiffness: 400, damping: 35 });
     } else {
@@ -66,7 +65,6 @@ function FavoriteItem({ item, onRemove, t, s, isLast }) {
         borderBottom: isLast ? "none" : `1px solid ${t.border}`,
       }}
     >
-      {/* Background "Remove" button — only on the right */}
       <motion.div
         onClick={onRemove}
         style={{
@@ -84,7 +82,6 @@ function FavoriteItem({ item, onRemove, t, s, isLast }) {
         Remove
       </motion.div>
 
-      {/* Main row content — translates with swipe */}
       <motion.div
         style={{
           x,
@@ -97,10 +94,29 @@ function FavoriteItem({ item, onRemove, t, s, isLast }) {
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        <img src={item.imgSm} alt={item.name} style={{ width: 40, height: 40, borderRadius: 10, objectFit: "cover", flexShrink: 0 }} />
+        {item.type === "custom" ? (
+          <div style={{
+            width: 40, height: 40, borderRadius: 10,
+            background: t.bg3,
+            border: `1.5px dashed ${t.accent}88`,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            flexShrink: 0,
+            color: t.accent,
+          }}>
+            <CoffeeCupIcon size={20} color={t.accent} />
+          </div>
+        ) : (
+          <img src={item.imgSm} alt={item.name} style={{ width: 40, height: 40, borderRadius: 10, objectFit: "cover", flexShrink: 0 }} />
+        )}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ ...s.settingName, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.name}</div>
-          <div style={s.settingDesc}>{item.label} · {item.strength}</div>
+          <div style={{ ...s.settingName, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            {item.name}
+          </div>
+          <div style={s.settingDesc}>
+            {item.type === "custom"
+              ? "Custom · from your journal"
+              : `${item.label} · ${item.strength}`}
+          </div>
         </div>
         <div
           onPointerDown={(e) => e.stopPropagation()}
@@ -121,25 +137,45 @@ function FavoriteItem({ item, onRemove, t, s, isLast }) {
 }
 
 export default function EditFavoritesScreen({ navigate, s, t, favorites, setFavorites }) {
+  const { drinks } = useJournal();
+
+  // Build full list of available items: built-ins + custom drinks
+  const customItems = drinks.map(d => ({
+    key: `custom:${d.id}`,
+    name: d.name,
+    type: "custom",
+  }));
+
+  const allItemsMap = {};
+  [...BUILT_IN, ...customItems].forEach(item => {
+    allItemsMap[item.key] = item;
+  });
+
+  // Resolve favorites array to full item objects (skip invalid/deleted ones)
   const favoriteItems = favorites
-    .map(name => ALL_RECIPES.find(r => r.name === name))
+    .map(key => allItemsMap[key])
     .filter(Boolean);
-  const nonFavoriteItems = ALL_RECIPES.filter(r => !favorites.includes(r.name));
+
+  // Non-favorited items (alphabetical)
+  const nonFavoriteItems = [...BUILT_IN, ...customItems]
+    .filter(item => !favorites.includes(item.key))
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   const handleReorder = (newOrder) => {
-    setFavorites(newOrder.map(item => item.name));
+    setFavorites(newOrder.map(item => item.key));
   };
 
-  const handleRemove = (name) => {
-    setFavorites(prev => prev.filter(f => f !== name));
+  const handleRemove = (key) => {
+    setFavorites(prev => prev.filter(f => f !== key));
   };
 
-  const handleAdd = (name) => {
-    setFavorites(prev => [...prev, name]);
+  const handleAdd = (key) => {
+    setFavorites(prev => [...prev, key]);
   };
 
   return (
-    <div>
+    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+      <div style={{ flex: 1 }}>
       <div style={s.header}>
         <div style={s.backRow}>
           <span style={s.backArrow} onClick={() => navigate("Home")}>←</span>
@@ -167,9 +203,9 @@ export default function EditFavoritesScreen({ navigate, s, t, favorites, setFavo
               <AnimatePresence>
                 {favoriteItems.map((r, i) => (
                   <FavoriteItem
-                    key={r.name}
+                    key={r.key}
                     item={r}
-                    onRemove={() => handleRemove(r.name)}
+                    onRemove={() => handleRemove(r.key)}
                     t={t}
                     s={s}
                     isLast={i === favoriteItems.length - 1}
@@ -187,17 +223,33 @@ export default function EditFavoritesScreen({ navigate, s, t, favorites, setFavo
           <div style={s.settingGroup}>
             {nonFavoriteItems.map((r, i) => (
               <motion.div
-                key={r.name}
+                key={r.key}
                 layout
                 transition={{ type: "spring", stiffness: 400, damping: 35 }}
                 style={{ ...s.settingRow(i === nonFavoriteItems.length - 1), cursor: "pointer" }}
-                onClick={() => handleAdd(r.name)}
+                onClick={() => handleAdd(r.key)}
               >
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <img src={r.imgSm} alt={r.name} style={{ width: 40, height: 40, borderRadius: 10, objectFit: "cover" }} />
+                  {r.type === "custom" ? (
+                    <div style={{
+                      width: 40, height: 40, borderRadius: 10,
+                      background: t.bg3,
+                      border: `1.5px dashed ${t.accent}88`,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      color: t.accent,
+                    }}>
+                      <CoffeeCupIcon size={20} color={t.accent} />
+                    </div>
+                  ) : (
+                    <img src={r.imgSm} alt={r.name} style={{ width: 40, height: 40, borderRadius: 10, objectFit: "cover" }} />
+                  )}
                   <div>
                     <div style={s.settingName}>{r.name}</div>
-                    <div style={s.settingDesc}>{r.label} · {r.strength}</div>
+                    <div style={s.settingDesc}>
+                      {r.type === "custom"
+                        ? "Custom · from your journal"
+                        : `${r.label} · ${r.strength}`}
+                    </div>
                   </div>
                 </div>
                 <div style={{
@@ -215,6 +267,7 @@ export default function EditFavoritesScreen({ navigate, s, t, favorites, setFavo
           </div>
         </div>
       )}
+      </div>
 
       <NavBar current="Home" navigate={navigate} s={s} t={t} />
     </div>

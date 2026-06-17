@@ -220,7 +220,24 @@ function EspressoCard({ entry, grinders, onClick, onRemove, t, s }) {
 }
 
 export default function JournalScreen({ navigate, s, t }) {
-  const [tab, setTab] = useState("drinks");
+  const [tab, setTabState] = useState(() => {
+    // Restore previous tab from localStorage
+    try {
+      const saved = localStorage.getItem("brewly_journal_tab");
+      return saved === "espresso" ? "espresso" : "drinks";
+    } catch {
+      return "drinks";
+    }
+  });
+  const setTab = (newTab) => {
+    setTabState(newTab);
+    try {
+      localStorage.setItem("brewly_journal_tab", newTab);
+    } catch {
+      // ignore localStorage errors (private mode, etc.)
+    }
+  };
+
   const [showPicker, setShowPicker] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const { drinks, espresso, grinders, deleteDrink, deleteEspresso } = useJournal();

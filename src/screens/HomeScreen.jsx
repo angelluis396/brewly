@@ -11,13 +11,38 @@ export default function HomeScreen({ navigate, s, t, units, favorites }) {
   const [activeTab, setActiveTab] = useState(favorites[0] || "Latte");
   const { drinks } = useJournal();
 
-  const handleFavClick = (name) => {
-    setActiveTab(name);
-    const group = RECIPE_GROUPS.find(g => g.name === name);
+  const handleFavClick = (favKey) => {
+    setActiveTab(favKey);
+    // Custom drink favorite (prefix "custom:")
+    if (favKey.startsWith("custom:")) {
+      const id = favKey.slice(7);
+      const drink = drinks.find(d => d.id === id);
+      if (drink) { navigate("DrinkEntryDetail", drink); return; }
+      // Drink was deleted — remove stale favorite (no-op here, will be cleaned up later)
+      return;
+    }
+    const group = RECIPE_GROUPS.find(g => g.name === favKey);
     if (group) { navigate("VariantDetail", group); return; }
-    const recipe = RECIPES.find(r => r.name === name);
+    const recipe = RECIPES.find(r => r.name === favKey);
     if (recipe) { navigate("RecipeDetail", recipe); return; }
   };
+
+  // Resolve favorite key to display name
+  const favoriteDisplayName = (favKey) => {
+    if (favKey.startsWith("custom:")) {
+      const id = favKey.slice(7);
+      const drink = drinks.find(d => d.id === id);
+      return drink?.name || "Unknown";
+    }
+    return favKey;
+  };
+
+  // Filter out favorites pointing to drinks that no longer exist
+  const validFavorites = favorites.filter(f => {
+    if (!f.startsWith("custom:")) return true;
+    const id = f.slice(7);
+    return drinks.some(d => d.id === id);
+  });
 
   // Espresso drinks combined for the hero
   const espressoItems = [...RECIPE_GROUPS, ...RECIPES]
@@ -54,14 +79,16 @@ export default function HomeScreen({ navigate, s, t, units, favorites }) {
           <span style={s.sectionTitle}>Your Favorites</span>
           <span style={s.seeAll} onClick={() => navigate("EditFavorites")}>Edit →</span>
         </div>
-        {favorites.length === 0 ? (
+        {validFavorites.length === 0 ? (
           <div style={{ fontSize: 13, color: t.textMuted, fontWeight: 300, paddingBottom: 10 }}>
             No favorites yet — tap Edit to add some.
           </div>
         ) : (
           <div style={s.tabsScroll}>
-            {favorites.map(f => (
-              <div key={f} style={s.tab(activeTab === f)} onClick={() => handleFavClick(f)}>{f}</div>
+            {validFavorites.map(f => (
+              <div key={f} style={s.tab(activeTab === f)} onClick={() => handleFavClick(f)}>
+                {favoriteDisplayName(f)}
+              </div>
             ))}
           </div>
         )}

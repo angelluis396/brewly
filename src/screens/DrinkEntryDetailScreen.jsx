@@ -16,7 +16,7 @@ function formatDate(dateString) {
   return `${d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} · ${time}`;
 }
 
-export default function DrinkEntryDetailScreen({ item, navigate, s, t }) {
+export default function DrinkEntryDetailScreen({ item, navigate, s, t, favorites, setFavorites }) {
   const { deleteDrink } = useJournal();
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -25,7 +25,22 @@ export default function DrinkEntryDetailScreen({ item, navigate, s, t }) {
     return null;
   }
 
+  const favoriteKey = `custom:${item.id}`;
+  const isFav = favorites?.includes(favoriteKey);
+
+  const toggleFavorite = () => {
+    setFavorites(prev =>
+      prev.includes(favoriteKey)
+        ? prev.filter(f => f !== favoriteKey)
+        : [...prev, favoriteKey]
+    );
+  };
+
   const handleDelete = async () => {
+    // Also remove from favorites if it was favorited
+    if (isFav) {
+      setFavorites(prev => prev.filter(f => f !== favoriteKey));
+    }
     await deleteDrink(item.id);
     setConfirmDelete(false);
     navigate("Journal");
@@ -104,8 +119,30 @@ export default function DrinkEntryDetailScreen({ item, navigate, s, t }) {
           </div>
         )}
 
+        {/* Favorites toggle */}
+        <button
+          onClick={toggleFavorite}
+          style={{
+            width: "100%",
+            padding: 14,
+            background: isFav ? "transparent" : t.accent,
+            color: isFav ? t.accent : "#fff",
+            border: isFav ? `1px solid ${t.accent}` : "none",
+            borderRadius: 12,
+            fontFamily: "'Outfit', sans-serif",
+            fontSize: 14,
+            fontWeight: 500,
+            cursor: "pointer",
+            marginTop: 24,
+            marginBottom: 10,
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+          }}
+        >
+          ♥ {isFav ? "Saved to Favorites" : "Save to Favorites"}
+        </button>
+
         {/* Action buttons */}
-        <div style={{ display: "flex", gap: 10, marginTop: 24 }}>
+        <div style={{ display: "flex", gap: 10 }}>
           <button
             onClick={() => navigate("DrinkEntryForm", item)}
             style={{

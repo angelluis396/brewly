@@ -91,7 +91,7 @@ export default function App() {
           {screen === "Journal"              && <JournalScreen              {...sharedProps} />}
           {screen === "DrinkEntryForm"       && <DrinkEntryForm             {...sharedProps} item={selectedItem} />}
           {screen === "EspressoEntryForm"    && <EspressoEntryForm          {...sharedProps} item={selectedItem} />}
-          {screen === "DrinkEntryDetail"     && <DrinkEntryDetailScreen     {...sharedProps} item={selectedItem} />}
+          {screen === "DrinkEntryDetail"     && <DrinkEntryDetailScreen     {...sharedProps} item={selectedItem} favorites={favorites} setFavorites={setFavorites} />}
           {screen === "EspressoEntryDetail"  && <EspressoEntryDetailScreen  {...sharedProps} item={selectedItem} />}
           {screen === "Grinders"             && <GrindersScreen             {...sharedProps} />}
           {screen === "Profile"              && (
